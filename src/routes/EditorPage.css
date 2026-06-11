@@ -261,6 +261,26 @@
   color: var(--seal);
 }
 
+/* 选中时的快捷键提示条 */
+.canvas-tip {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  font-family: var(--font-serif);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-faint);
+  background: var(--paper-0);
+  border: 1.4px solid var(--line);
+  border-radius: 20px;
+  padding: 5px 16px;
+  box-shadow: var(--shadow-soft);
+  z-index: 5;
+  pointer-events: none;
+  animation: ink-in 0.4s var(--ease) both;
+}
+
 /* 载入态 */
 .editor__loading {
   position: absolute;

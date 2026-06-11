@@ -1,0 +1,97 @@
+import { useRef, useEffect } from 'react';
+import { Group, Image as KonvaImage, Rect, Text } from 'react-konva';
+import type Konva from 'konva';
+import type { MapNode } from '../types';
+import { useLibraryStore } from '../store/libraryStore';
+import { useImage } from './useImage';
+
+interface Props {
+  node: MapNode;
+  isSelected: boolean;
+  invScale: number; // 1/viewport.scale，用于保持描边/文字视觉恒定
+  onSelect: () => void;
+  onChange: (patch: Partial<MapNode>) => void;
+  registerRef: (id: string, ref: Konva.Group | null) => void;
+}
+
+/**
+ * 单个画布节点：手绘素材图 + 选中外框 + 名称标签。
+ * 拖拽移动、缩放（由 Canvas 的 Transformer 接管）后回写坐标/尺寸。
+ */
+export function NodeShape({ node, isSelected, invScale, onSelect, onChange, registerRef }: Props) {
+  const groupRef = useRef<Konva.Group>(null);
+  const getAsset = useLibraryStore((s) => s.getAsset);
+  const asset = getAsset(node.assetId);
+  const img = useImage(asset?.dataUrl ?? '');
+
+  useEffect(() => {
+    registerRef(node.id, groupRef.current);
+    return () => registerRef(node.id, null);
+  }, [node.id, registerRef]);
+
+  function handleTransformEnd() {
+    const g = groupRef.current;
+    if (!g) return;
+    const scaleX = g.scaleX();
+    const scaleY = g.scaleY();
+    g.scaleX(1);
+    g.scaleY(1);
+    onChange({
+      x: g.x(),
+      y: g.y(),
+      width: Math.max(28, node.width * scaleX),
+      height: Math.max(28, node.height * scaleY),
+      rotation: g.rotation(),
+    });
+  }
+
+  const pad = 6; // 选中框外扩
+
+  return (
+    <Group
+      ref={groupRef}
+      x={node.x}
+      y={node.y}
+      rotation={node.rotation}
+      draggable
+      onMouseDown={onSelect}
+      onTap={onSelect}
+      onDragStart={onSelect}
+      onDragEnd={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
+      onTransformEnd={handleTransformEnd}
+    >
+      {/* 选中底色 + 手绘外框 */}
+      {isSelected && (
+        <Rect
+          x={-pad}
+          y={-pad}
+          width={node.width + pad * 2}
+          height={node.height + pad * 2}
+          fill="rgba(140,58,43,0.06)"
+          stroke="#8c3a2b"
+          strokeWidth={1.6 * invScale}
+          dash={[6 * invScale, 4 * invScale]}
+          cornerRadius={4 * invScale}
+        />
+      )}
+      {img ? (
+        <KonvaImage image={img} width={node.width} height={node.height} />
+      ) : (
+        <Rect width={node.width} height={node.height} fill="rgba(36,26,16,0.05)" />
+      )}
+      {/* 名称标签 */}
+      <Text
+        text={node.name}
+        x={-pad}
+        y={node.height + pad + 2}
+        width={node.width + pad * 2}
+        align="center"
+        fontFamily="'Noto Serif SC', serif"
+        fontSize={13 * invScale}
+        fontStyle={isSelected ? 'bold' : 'normal'}
+        fill={isSelected ? '#8c3a2b' : '#4d3c26'}
+        listening={false}
+      />
+    </Group>
+  );
+}

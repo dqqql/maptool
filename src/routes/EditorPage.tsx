@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Canvas } from '../canvas/Canvas';
+import { LibraryPanel } from '../panels/LibraryPanel';
+import { PropertyPanel } from '../panels/PropertyPanel';
 import { useWorldStore } from '../store/worldStore';
+import { useLibraryStore } from '../store/libraryStore';
 import { getWorld } from '../db/idb';
-import { DEFAULT_VIEWPORT } from '../types';
+import { DEFAULT_VIEWPORT, type Asset } from '../types';
 import './EditorPage.css';
 
 export function EditorPage() {
@@ -12,7 +15,22 @@ export function EditorPage() {
   const [worldName, setWorldName] = useState('');
   const [notFound, setNotFound] = useState(false);
 
-  const { loaded, viewport, load, unload, setViewport } = useWorldStore();
+  const loaded = useWorldStore((s) => s.loaded);
+  const viewport = useWorldStore((s) => s.viewport);
+  const nodes = useWorldStore((s) => s.nodes);
+  const selectedNodeId = useWorldStore((s) => s.selectedNodeId);
+  const load = useWorldStore((s) => s.load);
+  const unload = useWorldStore((s) => s.unload);
+  const setViewport = useWorldStore((s) => s.setViewport);
+  const addNode = useWorldStore((s) => s.addNode);
+  const removeNode = useWorldStore((s) => s.removeNode);
+  const duplicateNode = useWorldStore((s) => s.duplicateNode);
+
+  const loadLibrary = useLibraryStore((s) => s.load);
+
+  useEffect(() => {
+    loadLibrary();
+  }, [loadLibrary]);
 
   useEffect(() => {
     if (!id) return;
@@ -38,8 +56,26 @@ export function EditorPage() {
     if (notFound) navigate('/', { replace: true });
   }, [notFound, navigate]);
 
+  // 快捷键：Delete 删除、Ctrl/⌘+D 复制选中节点
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = e.target as HTMLElement;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) return;
+      const sel = useWorldStore.getState().selectedNodeId;
+      if (!sel) return;
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        removeNode(sel);
+      } else if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault();
+        duplicateNode(sel);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [removeNode, duplicateNode]);
+
   function zoomBy(factor: number) {
-    // 以画布中心为锚点缩放
     const col = document.querySelector('.canvas-col') as HTMLElement | null;
     const cx = col ? col.clientWidth / 2 : 400;
     const cy = col ? col.clientHeight / 2 : 300;
@@ -54,7 +90,18 @@ export function EditorPage() {
     setViewport({ ...DEFAULT_VIEWPORT });
   }
 
+  // 双击素材：落于当前视图中心
+  function placeAtCenter(asset: Asset) {
+    const col = document.querySelector('.canvas-col') as HTMLElement | null;
+    const cx = col ? col.clientWidth / 2 : 400;
+    const cy = col ? col.clientHeight / 2 : 300;
+    const worldX = (cx - viewport.x) / viewport.scale;
+    const worldY = (cy - viewport.y) / viewport.scale;
+    addNode(asset.id, asset.name, worldX, worldY);
+  }
+
   const zoomPct = Math.round(viewport.scale * 100);
+  const hasNodes = nodes.length > 0;
 
   return (
     <div className="editor parchment-bg">
@@ -86,60 +133,34 @@ export function EditorPage() {
 
       {/* 三栏主体 */}
       <div className="editor__body">
-        {/* 左：素材库（阶段 3）*/}
-        <aside className="rail rail--left grain-overlay">
-          <div className="rail__head">素材库</div>
-          <div className="rail__sub">Material Codex</div>
-          <div className="rail__pending">
-            <b>山河待引</b>
-            内置黑白手绘素材
-            <br />
-            将在此陈列，拖入画布即成节点。
-            <span className="rail__stage-tag">阶段 3 启用</span>
-          </div>
-        </aside>
+        <LibraryPanel onPlace={placeAtCenter} />
 
-        {/* 中：画布 */}
         <div className="canvas-col grain-overlay">
           {loaded ? (
             <>
-              <Canvas viewport={viewport} onViewportChange={setViewport} />
-              <div className="canvas-hint">
-                <div className="canvas-hint__title">空白的羊皮纸</div>
-                <div className="canvas-hint__desc">滚轮缩放 · 拖拽平移 · 山河自此落墨</div>
-              </div>
+              <Canvas />
+              {!hasNodes && (
+                <div className="canvas-hint">
+                  <div className="canvas-hint__title">空白的羊皮纸</div>
+                  <div className="canvas-hint__desc">从左侧素材库拖入山河 · 滚轮缩放 · 拖拽平移</div>
+                </div>
+              )}
               <div className="hud">
-                <button className="hud__btn" title="缩小" onClick={() => zoomBy(1 / 1.2)}>
-                  −
-                </button>
-                <span className="hud__zoom" title="重置缩放" onClick={resetView}>
-                  {zoomPct}%
-                </span>
-                <button className="hud__btn" title="放大" onClick={() => zoomBy(1.2)}>
-                  +
-                </button>
-                <button className="hud__home" onClick={resetView} title="回到原点">
-                  ⊹ 回到原点
-                </button>
+                <button className="hud__btn" title="缩小" onClick={() => zoomBy(1 / 1.2)}>−</button>
+                <span className="hud__zoom" title="重置缩放" onClick={resetView}>{zoomPct}%</span>
+                <button className="hud__btn" title="放大" onClick={() => zoomBy(1.2)}>+</button>
+                <button className="hud__home" onClick={resetView} title="回到原点">⊹ 回到原点</button>
               </div>
+              {selectedNodeId && (
+                <div className="canvas-tip">Delete 删除 · Ctrl/⌘+D 复制 · 拖角缩放</div>
+              )}
             </>
           ) : (
             <div className="editor__loading">正在铺展羊皮纸……</div>
           )}
         </div>
 
-        {/* 右：属性面板（阶段 4）*/}
-        <aside className="rail rail--right grain-overlay">
-          <div className="rail__head">属性</div>
-          <div className="rail__sub">Annotations</div>
-          <div className="rail__pending">
-            <b>尚无选中</b>
-            选中节点后，其名称、描述
-            <br />
-            与自定义属性将在此显现。
-            <span className="rail__stage-tag">阶段 4 启用</span>
-          </div>
-        </aside>
+        <PropertyPanel />
       </div>
     </div>
   );
