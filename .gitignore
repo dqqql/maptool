@@ -37,6 +37,8 @@ vite.config.d.ts
 .claude/
 .agents/
 skills-lock.json
+AGENTS.md
 
 # 截图核对产物（二进制，不入库）
 screenshots/
+tmp-findings-main-review.md
