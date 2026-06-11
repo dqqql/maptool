@@ -1,0 +1,273 @@
+/* =========================================================================
+   编辑器：顶工具栏 + 左素材库 + 中画布 + 右属性面板
+   阶段 2 仅画布可用，左右栏为后续阶段预留占位。
+   ========================================================================= */
+
+.editor {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+/* —— 顶部工具栏 —— */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 240, 0.55), rgba(212, 192, 143, 0.25)),
+    var(--paper-1);
+  border-bottom: 2px solid var(--line-strong);
+  box-shadow: 0 3px 12px -6px rgba(50, 34, 12, 0.4);
+  z-index: 10;
+}
+.toolbar__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  background: transparent;
+  border: 1.4px solid transparent;
+  border-radius: var(--r-md);
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: all 0.18s var(--ease);
+}
+.toolbar__back:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 250, 235, 0.5);
+  transform: translateX(-2px);
+}
+.toolbar__title {
+  font-family: var(--font-hand);
+  font-size: 26px;
+  color: var(--ink);
+  line-height: 1;
+  max-width: 38vw;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.toolbar__divider {
+  width: 1.5px;
+  height: 26px;
+  background: var(--line);
+}
+.toolbar__spacer {
+  flex: 1;
+}
+.toolbar__tools {
+  display: flex;
+  gap: 8px;
+}
+/* 工具按钮（模式切换占位）*/
+.tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--ink-soft);
+  background: var(--paper-0);
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-md);
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: all 0.18s var(--ease);
+}
+.tool:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 2px 2px 0 0 rgba(36, 26, 16, 0.7);
+}
+.tool[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper-0);
+  border-color: var(--ink);
+}
+.tool:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.tool__icon {
+  font-size: 15px;
+}
+
+/* —— 主体三栏 —— */
+.editor__body {
+  display: grid;
+  grid-template-columns: 248px 1fr 290px;
+  overflow: hidden;
+}
+
+/* 侧栏通用 */
+.rail {
+  position: relative;
+  overflow-y: auto;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 240, 0.4), rgba(212, 192, 143, 0.12)),
+    var(--paper-1);
+}
+.rail--left {
+  border-right: 2px solid var(--line-strong);
+}
+.rail--right {
+  border-left: 2px solid var(--line-strong);
+}
+.rail__head {
+  font-family: var(--font-hand);
+  font-size: 21px;
+  color: var(--ink);
+  padding: 16px 18px 6px;
+}
+.rail__sub {
+  font-family: var(--font-latin);
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+  padding: 0 18px 14px;
+  border-bottom: 1px dashed var(--line);
+}
+/* 后续阶段占位 */
+.rail__pending {
+  margin: 22px 18px;
+  padding: 22px 16px;
+  text-align: center;
+  border: 1.6px dashed var(--line);
+  border-radius: var(--r-md);
+  background: rgba(255, 250, 235, 0.3);
+  color: var(--ink-faint);
+  font-family: var(--font-serif);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.rail__pending b {
+  display: block;
+  font-family: var(--font-hand);
+  font-size: 18px;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+.rail__stage-tag {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--seal);
+  border: 1px solid var(--seal);
+  border-radius: 20px;
+  padding: 2px 10px;
+}
+
+/* —— 画布区 —— */
+.canvas-col {
+  position: relative;
+  overflow: hidden;
+}
+.canvas-wrap {
+  position: absolute;
+  inset: 0;
+}
+/* 画布上的 CSS 纸张纹理由 parchment-bg/grain 提供 */
+
+/* 画布提示（空白引导）*/
+.canvas-hint {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+  animation: ink-in 1.2s var(--ease) both;
+}
+.canvas-hint__title {
+  font-family: var(--font-hand);
+  font-size: 30px;
+  color: var(--ink-soft);
+  opacity: 0.6;
+}
+.canvas-hint__desc {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  color: var(--ink-faint);
+  opacity: 0.7;
+  margin-top: 8px;
+  letter-spacing: 0.04em;
+}
+
+/* —— 画布 HUD（缩放控制）—— */
+.hud {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--paper-0);
+  border: 1.5px solid var(--line-strong);
+  border-radius: 22px;
+  padding: 5px 8px;
+  box-shadow: var(--shadow-soft);
+  z-index: 5;
+}
+.hud__btn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--ink-soft);
+  transition: background 0.15s var(--ease);
+}
+.hud__btn:hover {
+  background: rgba(140, 110, 60, 0.16);
+}
+.hud__zoom {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 48px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.hud__home {
+  margin-left: 4px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+  font-family: var(--font-serif);
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  background: transparent;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.hud__home:hover {
+  color: var(--seal);
+}
+
+/* 载入态 */
+.editor__loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-hand);
+  font-size: 24px;
+  color: var(--ink-faint);
+}

@@ -1,0 +1,277 @@
+/* =========================================================================
+   世界管理首页
+   ========================================================================= */
+
+.home {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.home__inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 56px 40px 96px;
+}
+
+/* —— 报头 —— */
+.masthead {
+  text-align: center;
+  position: relative;
+  padding-bottom: 30px;
+  margin-bottom: 38px;
+}
+.masthead__rose {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 14px;
+  color: var(--ink-soft);
+  animation: seal-pop 0.9s var(--ease) both;
+}
+.masthead__title {
+  font-family: var(--font-hand);
+  font-size: clamp(48px, 8vw, 82px);
+  line-height: 1;
+  color: var(--ink);
+  letter-spacing: 0.06em;
+  text-shadow: 1px 1px 0 rgba(255, 250, 235, 0.6);
+}
+.masthead__sub {
+  font-family: var(--font-latin);
+  font-style: italic;
+  font-size: 15px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin-top: 12px;
+}
+/* 报头下的手绘分隔线 */
+.masthead__rule {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(440px, 70%);
+  height: 14px;
+  color: var(--line-strong);
+  opacity: 0.8;
+}
+
+/* —— 操作条 —— */
+.home__actions {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  flex-wrap: wrap;
+}
+.home__count {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  color: var(--ink-faint);
+  letter-spacing: 0.04em;
+}
+.home__count em {
+  font-style: normal;
+  font-family: var(--font-hand);
+  font-size: 19px;
+  color: var(--seal);
+  margin: 0 3px;
+}
+.home__action-group {
+  display: flex;
+  gap: 12px;
+}
+
+/* —— 世界卡片网格 —— */
+.world-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 22px;
+}
+
+.world-card {
+  position: relative;
+  background:
+    linear-gradient(180deg, rgba(255, 252, 240, 0.5), rgba(214, 192, 143, 0.18)),
+    var(--paper-0);
+  border: 1.6px solid var(--line-strong);
+  border-radius: var(--r-md);
+  padding: 22px 22px 18px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.24s var(--ease), box-shadow 0.24s var(--ease);
+  animation: ink-rise 0.6s var(--ease) both;
+  overflow: hidden;
+}
+.world-card::after {
+  /* 右下折角阴影，模拟翘起的纸角 */
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 30px;
+  height: 30px;
+  background: linear-gradient(135deg, transparent 50%, rgba(140, 110, 60, 0.28) 50%);
+}
+.world-card:hover {
+  transform: translateY(-5px) rotate(-0.4deg);
+  box-shadow: var(--shadow-lift);
+}
+.world-card__kicker {
+  font-family: var(--font-latin);
+  font-style: italic;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-ghost);
+}
+.world-card__name {
+  font-family: var(--font-hand);
+  font-size: 30px;
+  line-height: 1.15;
+  color: var(--ink);
+  margin: 8px 0 16px;
+  word-break: break-word;
+  /* 限制两行 */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 1.15em;
+}
+.world-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-family: var(--font-serif);
+  font-size: 12.5px;
+  color: var(--ink-faint);
+  border-top: 1px dashed var(--line);
+  padding-top: 12px;
+}
+.world-card__meta span b {
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 卡片删除键 */
+.world-card__del {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1.4px solid transparent;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: all 0.2s var(--ease);
+}
+.world-card:hover .world-card__del {
+  opacity: 1;
+  transform: scale(1);
+}
+.world-card__del:hover {
+  background: var(--seal);
+  border-color: var(--seal-deep);
+  color: #f6ecd6;
+}
+
+/* —— 空状态 —— */
+.empty {
+  text-align: center;
+  padding: 64px 24px;
+  border: 1.8px dashed var(--line);
+  border-radius: var(--r-lg);
+  background: rgba(255, 252, 240, 0.3);
+  animation: ink-in 0.9s var(--ease) both;
+}
+.empty__art {
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 20px;
+  color: var(--ink-faint);
+  opacity: 0.75;
+}
+.empty__title {
+  font-family: var(--font-hand);
+  font-size: 30px;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}
+.empty__desc {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  color: var(--ink-faint);
+  max-width: 380px;
+  margin: 0 auto 24px;
+  line-height: 1.7;
+}
+
+/* —— 弹层（创建 / 删除确认）—— */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(40, 28, 14, 0.4);
+  backdrop-filter: blur(2px);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  animation: ink-in 0.25s ease both;
+  padding: 24px;
+}
+.dialog {
+  width: min(440px, 100%);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 240, 0.7), rgba(220, 198, 150, 0.2)),
+    var(--paper-0);
+  border: 1.8px solid var(--ink);
+  border-radius: var(--r-lg);
+  padding: 30px 30px 26px;
+  box-shadow: var(--shadow-lift);
+  animation: ink-rise 0.32s var(--ease) both;
+  position: relative;
+}
+.dialog__title {
+  font-family: var(--font-hand);
+  font-size: 30px;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.dialog__hint {
+  font-family: var(--font-serif);
+  font-size: 13.5px;
+  color: var(--ink-faint);
+  margin-bottom: 20px;
+  line-height: 1.6;
+}
+.dialog__label {
+  display: block;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 26px;
+}
+.dialog__strong {
+  font-family: var(--font-hand);
+  font-size: 22px;
+  color: var(--seal);
+}

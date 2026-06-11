@@ -1,0 +1,28 @@
+{
+  "name": "trpg-maptool",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "面向 GM 的 TRPG 世界整理工具 —— 黑白手绘 + 羊皮纸风无限画布",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "idb": "^8.0.0",
+    "konva": "^9.3.6",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-konva": "^18.2.10",
+    "react-router-dom": "^6.26.2",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.6"
+  }
+}
