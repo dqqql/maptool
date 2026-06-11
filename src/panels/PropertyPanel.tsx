@@ -14,38 +14,46 @@ const TYPE_OPTIONS: { value: CustomPropType; label: string }[] = [
   { value: 'progress', label: '进度格' },
 ];
 
+const TEXT_BG = [
+  { label: '羊皮纸', value: 'rgba(255,250,235,0.85)' },
+  { label: '深纸', value: '#e7d7b0' },
+  { label: '便签黄', value: '#f1e6cd' },
+  { label: '朱砂', value: 'rgba(140,58,43,0.14)' },
+  { label: '透明', value: 'transparent' },
+];
+
 function defaultValue(type: CustomPropType, options: string[]): CustomProp['value'] {
   switch (type) {
-    case 'checkbox':
-      return false;
-    case 'number':
-    case 'rating':
-    case 'progress':
-      return 0;
-    case 'select':
-      return options[0] ?? '';
-    default:
-      return '';
+    case 'checkbox': return false;
+    case 'number': case 'rating': case 'progress': return 0;
+    case 'select': return options[0] ?? '';
+    default: return '';
   }
 }
 
+function Shell({ children }: { children: React.ReactNode }) {
+  return (
+    <aside className="rail rail--right grain-overlay">
+      <div className="rail__head">属性</div>
+      <div className="rail__sub">Annotations</div>
+      {children}
+    </aside>
+  );
+}
+
 export function PropertyPanel() {
-  const nodes = useWorldStore((s) => s.nodes);
-  const selectedNodeId = useWorldStore((s) => s.selectedNodeId);
-  const updateNode = useWorldStore((s) => s.updateNode);
-  const removeNode = useWorldStore((s) => s.removeNode);
-  const duplicateNode = useWorldStore((s) => s.duplicateNode);
-  const bringToFront = useWorldStore((s) => s.bringToFront);
-  const sendToBack = useWorldStore((s) => s.sendToBack);
-  const bringForward = useWorldStore((s) => s.bringForward);
-  const sendBackward = useWorldStore((s) => s.sendBackward);
-  const addCustomProp = useWorldStore((s) => s.addCustomProp);
-  const updateCustomProp = useWorldStore((s) => s.updateCustomProp);
-  const removeCustomProp = useWorldStore((s) => s.removeCustomProp);
+  const st = useWorldStore();
+  const {
+    nodes, edges, texts, selectedNodeId, selectedEdgeId, selectedTextId,
+    updateNode, removeNode, duplicateNode, bringToFront, sendToBack, bringForward, sendBackward,
+    addCustomProp, updateCustomProp, removeCustomProp,
+    updateEdge, removeEdge, updateText, removeText,
+  } = st;
 
   const node = nodes.find((n) => n.id === selectedNodeId) ?? null;
+  const edge = edges.find((e) => e.id === selectedEdgeId) ?? null;
+  const text = texts.find((t) => t.id === selectedTextId) ?? null;
 
-  // 新增属性表单
   const [adding, setAdding] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [newType, setNewType] = useState<CustomPropType>('text');
@@ -57,13 +65,9 @@ export function PropertyPanel() {
     setNewType('text');
     setNewOptions('');
   }
-
   function handleAddProp() {
     if (!node) return;
-    const options = newOptions
-      .split(/[,，]/)
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const options = newOptions.split(/[,，]/).map((x) => x.trim()).filter(Boolean);
     const prop: CustomProp = {
       id: crypto.randomUUID(),
       label: newLabel.trim() || '新属性',
@@ -75,133 +79,163 @@ export function PropertyPanel() {
     resetAddForm();
   }
 
-  if (!node) {
+  // —— 连线编辑 ——
+  if (edge) {
+    const from = nodes.find((n) => n.id === edge.fromNodeId);
+    const to = nodes.find((n) => n.id === edge.toNodeId);
     return (
-      <aside className="rail rail--right grain-overlay">
-        <div className="rail__head">属性</div>
-        <div className="rail__sub">Annotations</div>
-        <div className="rail__pending">
-          <b>尚无选中</b>
-          在画布上点选一个节点，
-          <br />
-          即可在此为它命名、描述
-          <br />
-          并添加自定义属性。
+      <Shell>
+        <div className="prop-actions">
+          <span className="prop-kind">连线</span>
+          <button className="prop-act prop-act--danger" onClick={() => removeEdge(edge.id)} title="删除连线">✕</button>
         </div>
-      </aside>
+        <div className="prop-body">
+          <div className="prop-relation">
+            <span>{from?.name || '？'}</span>
+            <span className="prop-relation__arrow">⟿</span>
+            <span>{to?.name || '？'}</span>
+          </div>
+          <div className="prop-field">
+            <label className="prop-label">名称</label>
+            <input className="ink-field" value={edge.name} placeholder="如：商道、宿怨……"
+              onChange={(e) => updateEdge(edge.id, { name: e.target.value })} />
+          </div>
+          <div className="prop-field">
+            <label className="prop-label">类型</label>
+            <input className="ink-field" value={edge.edgeType} placeholder="如：道路 / 隶属 / 敌对……"
+              onChange={(e) => updateEdge(edge.id, { edgeType: e.target.value })} />
+          </div>
+          <div className="prop-field">
+            <label className="prop-label">描述</label>
+            <textarea className="ink-field prop-textarea" rows={4} value={edge.description}
+              placeholder="记下这段关系的来龙去脉……"
+              onChange={(e) => updateEdge(edge.id, { description: e.target.value })} />
+          </div>
+        </div>
+      </Shell>
     );
   }
 
-  return (
-    <aside className="rail rail--right grain-overlay">
-      <div className="rail__head">属性</div>
-      <div className="rail__sub">Annotations</div>
-
-      {/* 节点操作 */}
-      <div className="prop-actions">
-        <div className="prop-actions__group" title="层级">
-          <button className="prop-act" onClick={() => bringToFront(node.id)} title="置顶">⤒</button>
-          <button className="prop-act" onClick={() => bringForward(node.id)} title="上移一层">↑</button>
-          <button className="prop-act" onClick={() => sendBackward(node.id)} title="下移一层">↓</button>
-          <button className="prop-act" onClick={() => sendToBack(node.id)} title="置底">⤓</button>
+  // —— 文本框编辑 ——
+  if (text) {
+    return (
+      <Shell>
+        <div className="prop-actions">
+          <span className="prop-kind">文本备注</span>
+          <button className="prop-act prop-act--danger" onClick={() => removeText(text.id)} title="删除文本框">✕</button>
         </div>
-        <div className="prop-actions__group">
-          <button className="prop-act" onClick={() => duplicateNode(node.id)} title="复制节点">⎘</button>
-          <button className="prop-act prop-act--danger" onClick={() => removeNode(node.id)} title="删除节点">✕</button>
+        <div className="prop-body">
+          <div className="prop-field">
+            <label className="prop-label">内容</label>
+            <textarea className="ink-field prop-textarea" rows={5} value={text.content}
+              placeholder="在画布上双击文本框也可直接编辑……"
+              onChange={(e) => updateText(text.id, { content: e.target.value })} />
+          </div>
+          <div className="prop-field">
+            <label className="prop-label">字号 · {text.fontSize}px</label>
+            <input type="range" min={12} max={40} value={text.fontSize} className="prop-range"
+              onChange={(e) => updateText(text.id, { fontSize: Number(e.target.value) })} />
+          </div>
+          <div className="prop-field">
+            <label className="prop-label">背景</label>
+            <div className="prop-swatches">
+              {TEXT_BG.map((bg) => (
+                <button key={bg.value} title={bg.label}
+                  className={`prop-swatch ${text.background === bg.value ? 'is-on' : ''} ${bg.value === 'transparent' ? 'is-transparent' : ''}`}
+                  style={{ background: bg.value === 'transparent' ? undefined : bg.value }}
+                  onClick={() => updateText(text.id, { background: bg.value })} />
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      </Shell>
+    );
+  }
 
-      <div className="prop-body">
-        {/* 名称 */}
-        <div className="prop-field">
-          <label className="prop-label">名称</label>
-          <input
-            className="ink-field"
-            value={node.name}
-            maxLength={60}
-            placeholder="为此处起名……"
-            onChange={(e) => updateNode(node.id, { name: e.target.value })}
-          />
+  // —— 节点编辑 ——
+  if (node) {
+    return (
+      <Shell>
+        <div className="prop-actions">
+          <div className="prop-actions__group" title="层级">
+            <button className="prop-act" onClick={() => bringToFront(node.id)} title="置顶">⤒</button>
+            <button className="prop-act" onClick={() => bringForward(node.id)} title="上移一层">↑</button>
+            <button className="prop-act" onClick={() => sendBackward(node.id)} title="下移一层">↓</button>
+            <button className="prop-act" onClick={() => sendToBack(node.id)} title="置底">⤓</button>
+          </div>
+          <div className="prop-actions__group">
+            <button className="prop-act" onClick={() => duplicateNode(node.id)} title="复制节点">⎘</button>
+            <button className="prop-act prop-act--danger" onClick={() => removeNode(node.id)} title="删除节点">✕</button>
+          </div>
         </div>
 
-        {/* 描述 */}
-        <div className="prop-field">
-          <label className="prop-label">描述</label>
-          <textarea
-            className="ink-field prop-textarea"
-            value={node.description}
-            rows={4}
-            placeholder="记下它的来历、传说与现状……"
-            onChange={(e) => updateNode(node.id, { description: e.target.value })}
-          />
-        </div>
-
-        {/* 自定义属性 */}
-        <div className="prop-custom">
-          <div className="prop-custom__head">
-            <span className="prop-label">自定义属性</span>
-            <span className="prop-custom__count">{node.customProps.length}</span>
+        <div className="prop-body">
+          <div className="prop-field">
+            <label className="prop-label">名称</label>
+            <input className="ink-field" value={node.name} maxLength={60} placeholder="为此处起名……"
+              onChange={(e) => updateNode(node.id, { name: e.target.value })} />
+          </div>
+          <div className="prop-field">
+            <label className="prop-label">描述</label>
+            <textarea className="ink-field prop-textarea" value={node.description} rows={4}
+              placeholder="记下它的来历、传说与现状……"
+              onChange={(e) => updateNode(node.id, { description: e.target.value })} />
           </div>
 
-          {node.customProps.length === 0 && !adding && (
-            <p className="prop-custom__empty">尚无自定义属性。按需添加你关心的字段。</p>
-          )}
-
-          {node.customProps.map((p) => (
-            <CustomPropRow
-              key={p.id}
-              prop={p}
-              onChange={(patch) => updateCustomProp(node.id, p.id, patch)}
-              onRemove={() => removeCustomProp(node.id, p.id)}
-            />
-          ))}
-
-          {/* 新增属性表单 */}
-          {adding ? (
-            <div className="prop-add">
-              <label className="prop-label">属性名</label>
-              <input
-                className="ink-field"
-                autoFocus
-                value={newLabel}
-                placeholder="如：阵营、人口、危险度……"
-                maxLength={20}
-                onChange={(e) => setNewLabel(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddProp()}
-              />
-              <label className="prop-label">控件类型</label>
-              <select
-                className="ink-field"
-                value={newType}
-                onChange={(e) => setNewType(e.target.value as CustomPropType)}
-              >
-                {TYPE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-              {newType === 'select' && (
-                <>
-                  <label className="prop-label">选项（逗号分隔）</label>
-                  <input
-                    className="ink-field"
-                    value={newOptions}
-                    placeholder="联盟, 中立, 敌对"
-                    onChange={(e) => setNewOptions(e.target.value)}
-                  />
-                </>
-              )}
-              <div className="prop-add__actions">
-                <button className="ink-btn ink-btn--ghost ink-btn--sm" onClick={resetAddForm}>取消</button>
-                <button className="ink-btn ink-btn--seal ink-btn--sm" onClick={handleAddProp}>添加</button>
-              </div>
+          <div className="prop-custom">
+            <div className="prop-custom__head">
+              <span className="prop-label">自定义属性</span>
+              <span className="prop-custom__count">{node.customProps.length}</span>
             </div>
-          ) : (
-            <button className="prop-add-btn" onClick={() => setAdding(true)}>
-              ＋ 添加自定义属性
-            </button>
-          )}
+            {node.customProps.length === 0 && !adding && (
+              <p className="prop-custom__empty">尚无自定义属性。按需添加你关心的字段。</p>
+            )}
+            {node.customProps.map((p) => (
+              <CustomPropRow key={p.id} prop={p}
+                onChange={(patch) => updateCustomProp(node.id, p.id, patch)}
+                onRemove={() => removeCustomProp(node.id, p.id)} />
+            ))}
+            {adding ? (
+              <div className="prop-add">
+                <label className="prop-label">属性名</label>
+                <input className="ink-field" autoFocus value={newLabel} maxLength={20}
+                  placeholder="如：阵营、人口、危险度……"
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddProp()} />
+                <label className="prop-label">控件类型</label>
+                <select className="ink-field" value={newType} onChange={(e) => setNewType(e.target.value as CustomPropType)}>
+                  {TYPE_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+                {newType === 'select' && (
+                  <>
+                    <label className="prop-label">选项（逗号分隔）</label>
+                    <input className="ink-field" value={newOptions} placeholder="联盟, 中立, 敌对"
+                      onChange={(e) => setNewOptions(e.target.value)} />
+                  </>
+                )}
+                <div className="prop-add__actions">
+                  <button className="ink-btn ink-btn--ghost ink-btn--sm" onClick={resetAddForm}>取消</button>
+                  <button className="ink-btn ink-btn--seal ink-btn--sm" onClick={handleAddProp}>添加</button>
+                </div>
+              </div>
+            ) : (
+              <button className="prop-add-btn" onClick={() => setAdding(true)}>＋ 添加自定义属性</button>
+            )}
+          </div>
         </div>
+      </Shell>
+    );
+  }
+
+  // —— 空 ——
+  return (
+    <Shell>
+      <div className="rail__pending">
+        <b>尚无选中</b>
+        在画布上点选节点 / 连线 / 文本，
+        <br />
+        即可在此编辑它的细节。
       </div>
-    </aside>
+    </Shell>
   );
 }

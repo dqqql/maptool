@@ -3,6 +3,9 @@ import { Stage, Layer, Line, Circle, Group, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import { useWorldStore } from '../store/worldStore';
 import { NodeShape } from './NodeShape';
+import { EdgeLine } from './EdgeLine';
+import { TextShape } from './TextShape';
+import type { MapNode } from '../types';
 
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 4;
@@ -13,37 +16,30 @@ const COLOR_MINOR = 'rgba(120, 95, 55, 0.13)';
 const COLOR_MAJOR = 'rgba(96, 74, 40, 0.26)';
 const COLOR_AXIS = 'rgba(140, 58, 43, 0.5)';
 
-function clamp(v: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, v));
-}
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+const center = (n: MapNode) => ({ x: n.x + n.width / 2, y: n.y + n.height / 2 });
 
-/**
- * 无限羊皮纸画布。
- * - 纸张纹理由容器 CSS 提供，Konva Stage 透明叠加。
- * - 网格随视口缩放平移；滚轮以鼠标为中心缩放；空白处拖拽平移。
- * - 渲染节点、选中变换（Transformer）、从素材库拖放生成节点。
- */
 export function Canvas() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const trRef = useRef<Konva.Transformer>(null);
-  const nodeRefs = useRef<Map<string, Konva.Group>>(new Map());
+  const shapeRefs = useRef<Map<string, Konva.Group>>(new Map());
 
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [panning, setPanning] = useState(false);
+  const [editingTextId, setEditingTextId] = useState<string | null>(null);
   const panState = useRef<{ lastX: number; lastY: number } | null>(null);
 
-  const viewport = useWorldStore((s) => s.viewport);
-  const setViewport = useWorldStore((s) => s.setViewport);
-  const nodes = useWorldStore((s) => s.nodes);
-  const selectedNodeId = useWorldStore((s) => s.selectedNodeId);
-  const select = useWorldStore((s) => s.select);
-  const addNode = useWorldStore((s) => s.addNode);
-  const updateNode = useWorldStore((s) => s.updateNode);
+  const s = useWorldStore();
+  const {
+    viewport, nodes, edges, texts, mode, connectFrom,
+    selectedNodeId, selectedEdgeId, selectedTextId,
+    setViewport, addNode, updateNode, selectNode, selectEdge, selectText,
+    clearSelection, addEdge, setConnectFrom, addText, updateText,
+  } = s;
 
   const invScale = 1 / viewport.scale;
 
-  // 自适应容器尺寸
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
@@ -55,67 +51,101 @@ export function Canvas() {
     return () => ro.disconnect();
   }, []);
 
-  // 节点 ref 登记，供 Transformer 绑定
   const registerRef = useCallback((id: string, ref: Konva.Group | null) => {
-    if (ref) nodeRefs.current.set(id, ref);
-    else nodeRefs.current.delete(id);
+    if (ref) shapeRefs.current.set(id, ref);
+    else shapeRefs.current.delete(id);
   }, []);
 
-  // 选中变化 → Transformer 绑定到对应节点
+  // Transformer 绑定选中的节点或文本框
   useEffect(() => {
     const tr = trRef.current;
     if (!tr) return;
-    const target = selectedNodeId ? nodeRefs.current.get(selectedNodeId) : null;
+    const id = selectedNodeId ?? selectedTextId;
+    const target = id ? shapeRefs.current.get(id) : null;
     tr.nodes(target ? [target] : []);
     tr.getLayer()?.batchDraw();
-  }, [selectedNodeId, nodes]);
+  }, [selectedNodeId, selectedTextId, nodes, texts]);
 
-  // 可见世界范围 → 网格线
   const grid = useMemo(() => {
     const { x, y, scale } = viewport;
     const { w, h } = size;
     if (w === 0 || h === 0) return { minor: [] as number[][], major: [] as number[][] };
-    const left = (0 - x) / scale;
-    const top = (0 - y) / scale;
-    const right = (w - x) / scale;
-    const bottom = (h - y) / scale;
-    const startX = Math.floor(left / GRID) * GRID;
-    const startY = Math.floor(top / GRID) * GRID;
-    const minor: number[][] = [];
-    const major: number[][] = [];
-    for (let gx = startX; gx <= right; gx += GRID) {
+    const left = (0 - x) / scale, top = (0 - y) / scale;
+    const right = (w - x) / scale, bottom = (h - y) / scale;
+    const startX = Math.floor(left / GRID) * GRID, startY = Math.floor(top / GRID) * GRID;
+    const minor: number[][] = [], major: number[][] = [];
+    for (let gx = startX; gx <= right; gx += GRID)
       ((gx / GRID) % MAJOR_EVERY === 0 ? major : minor).push([gx, top, gx, bottom]);
-    }
-    for (let gy = startY; gy <= bottom; gy += GRID) {
+    for (let gy = startY; gy <= bottom; gy += GRID)
       ((gy / GRID) % MAJOR_EVERY === 0 ? major : minor).push([left, gy, right, gy]);
-    }
     return { minor, major };
   }, [viewport, size]);
 
   const sortedNodes = useMemo(() => [...nodes].sort((a, b) => a.zIndex - b.zIndex), [nodes]);
+  const nodeById = useMemo(() => new Map(nodes.map((n) => [n.id, n])), [nodes]);
 
-  // 滚轮缩放（锚定鼠标）
-  function handleWheel(e: Konva.KonvaEventObject<WheelEvent>) {
-    e.evt.preventDefault();
-    const stage = stageRef.current;
-    const pointer = stage?.getPointerPosition();
-    if (!pointer) return;
-    const oldScale = viewport.scale;
-    const worldX = (pointer.x - viewport.x) / oldScale;
-    const worldY = (pointer.y - viewport.y) / oldScale;
-    const factor = 1.08;
-    const newScale = clamp(e.evt.deltaY > 0 ? oldScale / factor : oldScale * factor, MIN_SCALE, MAX_SCALE);
-    setViewport({ scale: newScale, x: pointer.x - worldX * newScale, y: pointer.y - worldY * newScale });
+  function worldOf(clientX: number, clientY: number) {
+    const rect = wrapRef.current!.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left - viewport.x) / viewport.scale,
+      y: (clientY - rect.top - viewport.y) / viewport.scale,
+    };
   }
 
-  // 空白处按下 → 取消选中 + 准备平移
-  function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent>) {
-    if (e.target !== e.target.getStage()) return;
-    select(null);
+  // —— 缩放 ——
+  function handleWheel(e: Konva.KonvaEventObject<WheelEvent>) {
+    e.evt.preventDefault();
+    const pointer = stageRef.current?.getPointerPosition();
+    if (!pointer) return;
+    const oldScale = viewport.scale;
+    const wx = (pointer.x - viewport.x) / oldScale;
+    const wy = (pointer.y - viewport.y) / oldScale;
+    const factor = 1.08;
+    const newScale = clamp(e.evt.deltaY > 0 ? oldScale / factor : oldScale * factor, MIN_SCALE, MAX_SCALE);
+    setViewport({ scale: newScale, x: pointer.x - wx * newScale, y: pointer.y - wy * newScale });
+  }
+
+  // —— 节点点击（模式相关）——
+  function handleNodeClick(id: string) {
+    if (mode === 'connect') {
+      if (!connectFrom) setConnectFrom(id);
+      else if (connectFrom !== id) {
+        addEdge(connectFrom, id);
+        setConnectFrom(null);
+      }
+    } else if (mode === 'select') {
+      selectNode(id);
+    }
+  }
+
+  // —— 画布按下 ——
+  function startPan() {
     const p = stageRef.current?.getPointerPosition();
     if (!p) return;
     panState.current = { lastX: p.x, lastY: p.y };
     setPanning(true);
+  }
+  function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent>) {
+    if (mode === 'pan') {
+      startPan();
+      return;
+    }
+    const onEmpty = e.target === e.target.getStage();
+    if (mode === 'text') {
+      if (onEmpty) {
+        const p = stageRef.current!.getPointerPosition()!;
+        const wx = (p.x - viewport.x) / viewport.scale;
+        const wy = (p.y - viewport.y) / viewport.scale;
+        addText(wx, wy);
+      }
+      return;
+    }
+    // select / connect
+    if (onEmpty) {
+      clearSelection();
+      if (mode === 'connect') setConnectFrom(null);
+      startPan();
+    }
   }
   function handleMouseMove() {
     if (!panState.current) return;
@@ -131,26 +161,26 @@ export function Canvas() {
     setPanning(false);
   }
 
-  // 从素材库拖放 → 生成节点
+  // —— 素材拖放 ——
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     const assetId = e.dataTransfer.getData('application/x-asset-id');
     const name = e.dataTransfer.getData('application/x-asset-name') || '新节点';
     if (!assetId) return;
-    const rect = wrapRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const sx = e.clientX - rect.left;
-    const sy = e.clientY - rect.top;
-    const worldX = (sx - viewport.x) / viewport.scale;
-    const worldY = (sy - viewport.y) / viewport.scale;
-    addNode(assetId, name, worldX, worldY);
+    const { x, y } = worldOf(e.clientX, e.clientY);
+    addNode(assetId, name, x, y);
   }
+
+  const dragEnabled = mode === 'select';
+  const cursor = mode === 'pan' ? (panning ? 'grabbing' : 'grab') : mode === 'text' ? 'text' : mode === 'connect' ? 'crosshair' : panning ? 'grabbing' : 'default';
+
+  const editingBox = editingTextId ? texts.find((t) => t.id === editingTextId) : null;
 
   return (
     <div
       ref={wrapRef}
       className="canvas-wrap"
-      style={{ cursor: panning ? 'grabbing' : 'grab' }}
+      style={{ cursor }}
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleDrop}
     >
@@ -184,7 +214,27 @@ export function Canvas() {
             </Group>
           </Layer>
 
-          {/* 节点层 */}
+          {/* 连线层（在节点下方）*/}
+          <Layer>
+            {edges.map((edge) => {
+              const from = nodeById.get(edge.fromNodeId);
+              const to = nodeById.get(edge.toNodeId);
+              if (!from || !to) return null;
+              return (
+                <EdgeLine
+                  key={edge.id}
+                  edge={edge}
+                  from={center(from)}
+                  to={center(to)}
+                  isSelected={edge.id === selectedEdgeId}
+                  invScale={invScale}
+                  onSelect={() => mode === 'select' && selectEdge(edge.id)}
+                />
+              );
+            })}
+          </Layer>
+
+          {/* 节点 + 文本框层 */}
           <Layer>
             {sortedNodes.map((n) => (
               <NodeShape
@@ -192,13 +242,31 @@ export function Canvas() {
                 node={n}
                 isSelected={n.id === selectedNodeId}
                 invScale={invScale}
-                onSelect={() => select(n.id)}
+                draggable={dragEnabled}
+                connectSource={n.id === connectFrom}
+                onSelect={() => handleNodeClick(n.id)}
                 onChange={(patch) => updateNode(n.id, patch)}
+                registerRef={registerRef}
+              />
+            ))}
+            {texts.map((t) => (
+              <TextShape
+                key={t.id}
+                box={t}
+                isSelected={t.id === selectedTextId}
+                invScale={invScale}
+                onSelect={() => mode === 'select' && selectText(t.id)}
+                onChange={(patch) => updateText(t.id, patch)}
+                onEdit={() => {
+                  selectText(t.id);
+                  setEditingTextId(t.id);
+                }}
                 registerRef={registerRef}
               />
             ))}
             <Transformer
               ref={trRef}
+              rotateEnabled={!selectedTextId}
               rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
               anchorSize={9}
               anchorCornerRadius={5}
@@ -206,12 +274,32 @@ export function Canvas() {
               anchorFill="#f4ead0"
               borderStroke="#8c3a2b"
               borderDash={[5, 4]}
-              boundBoxFunc={(oldBox, newBox) =>
-                newBox.width < 28 || newBox.height < 28 ? oldBox : newBox
-              }
+              boundBoxFunc={(oldBox, newBox) => (newBox.width < 28 || newBox.height < 28 ? oldBox : newBox)}
             />
           </Layer>
         </Stage>
+      )}
+
+      {/* 文本编辑浮层 */}
+      {editingBox && (
+        <textarea
+          className="text-edit-overlay"
+          autoFocus
+          value={editingBox.content}
+          style={{
+            left: editingBox.x * viewport.scale + viewport.x,
+            top: editingBox.y * viewport.scale + viewport.y,
+            width: editingBox.width * viewport.scale,
+            height: editingBox.height * viewport.scale,
+            fontSize: editingBox.fontSize * viewport.scale,
+            background: editingBox.background,
+          }}
+          onChange={(e) => updateText(editingBox.id, { content: e.target.value })}
+          onBlur={() => setEditingTextId(null)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') setEditingTextId(null);
+          }}
+        />
       )}
     </div>
   );

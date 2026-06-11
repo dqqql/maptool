@@ -37,8 +37,69 @@
   border-color: var(--seal-deep);
 }
 
+.prop-kind {
+  font-family: var(--font-hand);
+  font-size: 19px;
+  color: var(--ink);
+}
+
 .prop-body {
   padding: 16px 16px 40px;
+}
+
+/* 连线：起止节点 */
+.prop-relation {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: rgba(255, 250, 235, 0.5);
+  border: 1.3px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  margin-bottom: 18px;
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: center;
+}
+.prop-relation__arrow {
+  color: var(--seal);
+  font-size: 18px;
+}
+
+/* 字号滑块 */
+.prop-range {
+  width: 100%;
+  accent-color: var(--seal);
+  cursor: pointer;
+}
+
+/* 背景色板 */
+.prop-swatches {
+  display: flex;
+  gap: 8px;
+}
+.prop-swatch {
+  width: 34px;
+  height: 26px;
+  border: 1.6px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: transform 0.14s var(--ease), box-shadow 0.14s var(--ease);
+}
+.prop-swatch:hover {
+  transform: translateY(-2px);
+}
+.prop-swatch.is-on {
+  box-shadow: 0 0 0 2px var(--paper-1), 0 0 0 3.6px var(--seal);
+}
+.prop-swatch.is-transparent {
+  background:
+    linear-gradient(45deg, var(--line) 25%, transparent 25%, transparent 75%, var(--line) 75%) 0 0 / 10px 10px,
+    var(--paper-0);
 }
 .prop-field {
   margin-bottom: 18px;

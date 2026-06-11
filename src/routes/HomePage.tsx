@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { listWorlds, createWorld, deleteWorld } from '../db/idb';
+import { importWorldFromFile } from '../serialization/worldFile';
 import type { World } from '../types';
 import './HomePage.css';
 
@@ -57,7 +58,9 @@ export function HomePage() {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [pendingDelete, setPendingDelete] = useState<World | null>(null);
+  const [importing, setImporting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   async function refresh() {
     setWorlds(await listWorlds());
@@ -85,6 +88,21 @@ export function HomePage() {
     refresh();
   }
 
+  async function handleImport(files: FileList | null) {
+    const file = files?.[0];
+    if (fileRef.current) fileRef.current.value = '';
+    if (!file) return;
+    setImporting(true);
+    try {
+      const world = await importWorldFromFile(file);
+      navigate(`/world/${world.id}`);
+    } catch (err) {
+      alert('导入失败：' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setImporting(false);
+    }
+  }
+
   const isEmpty = worlds !== null && worlds.length === 0;
 
   return (
@@ -108,11 +126,19 @@ export function HomePage() {
           <div className="home__action-group">
             <button
               className="ink-btn ink-btn--ghost"
-              title="导入舆图文件（阶段 6 启用）"
-              disabled
+              title="导入此前导出的世界 JSON 存档"
+              disabled={importing}
+              onClick={() => fileRef.current?.click()}
             >
-              ↥ 导入舆图
+              ↥ {importing ? '导入中…' : '导入舆图'}
             </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="application/json,.json"
+              hidden
+              onChange={(e) => handleImport(e.target.files)}
+            />
             <button className="ink-btn ink-btn--seal" onClick={() => setCreating(true)}>
               ✦ 开辟新世界
             </button>

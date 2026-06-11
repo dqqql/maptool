@@ -261,6 +261,54 @@
   color: var(--seal);
 }
 
+.tool--export {
+  color: var(--seal);
+  border-color: var(--seal);
+}
+.tool--export:hover:not(:disabled) {
+  background: var(--seal);
+  color: #f6ecd6;
+  box-shadow: 2px 2px 0 0 var(--seal-deep);
+}
+
+/* 模式提示横幅 */
+.canvas-mode-banner {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #f6ecd6;
+  background: var(--seal);
+  border: 1.4px solid var(--seal-deep);
+  border-radius: 22px;
+  padding: 7px 20px;
+  box-shadow: var(--shadow-soft);
+  z-index: 6;
+  pointer-events: none;
+  animation: ink-rise 0.35s var(--ease) both;
+}
+
+/* 文本框编辑浮层 */
+.text-edit-overlay {
+  position: absolute;
+  z-index: 8;
+  margin: 0;
+  padding: 9px 10px;
+  border: 1.8px solid var(--seal);
+  border-radius: 5px;
+  outline: none;
+  resize: none;
+  font-family: 'Noto Serif SC', serif;
+  line-height: 1.45;
+  color: var(--ink);
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+
 /* 选中时的快捷键提示条 */
 .canvas-tip {
   position: absolute;

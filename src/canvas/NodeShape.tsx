@@ -9,6 +9,8 @@ interface Props {
   node: MapNode;
   isSelected: boolean;
   invScale: number; // 1/viewport.scale，用于保持描边/文字视觉恒定
+  draggable: boolean;
+  connectSource: boolean; // 连线模式下作为起点高亮
   onSelect: () => void;
   onChange: (patch: Partial<MapNode>) => void;
   registerRef: (id: string, ref: Konva.Group | null) => void;
@@ -18,7 +20,7 @@ interface Props {
  * 单个画布节点：手绘素材图 + 选中外框 + 名称标签。
  * 拖拽移动、缩放（由 Canvas 的 Transformer 接管）后回写坐标/尺寸。
  */
-export function NodeShape({ node, isSelected, invScale, onSelect, onChange, registerRef }: Props) {
+export function NodeShape({ node, isSelected, invScale, draggable, connectSource, onSelect, onChange, registerRef }: Props) {
   const groupRef = useRef<Konva.Group>(null);
   const getAsset = useLibraryStore((s) => s.getAsset);
   const asset = getAsset(node.assetId);
@@ -53,13 +55,26 @@ export function NodeShape({ node, isSelected, invScale, onSelect, onChange, regi
       x={node.x}
       y={node.y}
       rotation={node.rotation}
-      draggable
+      draggable={draggable}
       onMouseDown={onSelect}
       onTap={onSelect}
       onDragStart={onSelect}
       onDragEnd={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
       onTransformEnd={handleTransformEnd}
     >
+      {/* 连线起点高亮环 */}
+      {connectSource && (
+        <Rect
+          x={-pad - 2}
+          y={-pad - 2}
+          width={node.width + (pad + 2) * 2}
+          height={node.height + (pad + 2) * 2}
+          stroke="#8c3a2b"
+          strokeWidth={2.4 * invScale}
+          dash={[3 * invScale, 3 * invScale]}
+          cornerRadius={6 * invScale}
+        />
+      )}
       {/* 选中底色 + 手绘外框 */}
       {isSelected && (
         <Rect
