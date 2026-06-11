@@ -4,27 +4,44 @@
 .lib {
   padding: 14px 14px 4px;
 }
-.lib__group {
-  margin-bottom: 18px;
+.lib__tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 4px;
+  background: rgba(255, 250, 235, 0.46);
+  border: 1.2px solid rgba(107, 87, 51, 0.28);
+  border-radius: var(--r-md);
 }
-.lib__group-title {
+.lib__tab {
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: calc(var(--r-md) - 4px);
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
   font-family: var(--font-serif);
   font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.16em;
-  color: var(--ink-faint);
-  text-transform: uppercase;
-  margin: 0 0 9px 2px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  letter-spacing: 0.06em;
+  transition: all 0.16s var(--ease);
 }
-.lib__group-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--line);
-  opacity: 0.6;
+.lib__tab:hover {
+  color: var(--ink);
+  background: rgba(255, 252, 240, 0.72);
+}
+.lib__tab[aria-selected='true'] {
+  color: var(--ink);
+  background:
+    linear-gradient(180deg, rgba(255, 252, 240, 0.95), rgba(220, 198, 150, 0.22)),
+    var(--paper-0);
+  border-color: var(--line-strong);
+  box-shadow: 2px 2px 0 rgba(36, 26, 16, 0.24);
+}
+.lib__actions {
+  margin-bottom: 12px;
 }
 .lib__grid {
   display: grid;
