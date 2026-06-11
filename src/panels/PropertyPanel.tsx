@@ -48,6 +48,7 @@ export function PropertyPanel() {
     updateNode, removeNode, duplicateNode, bringToFront, sendToBack, bringForward, sendBackward,
     addCustomProp, updateCustomProp, removeCustomProp,
     updateEdge, removeEdge, updateText, removeText,
+    selectNode, selectEdge, selectText,
   } = st;
 
   const node = nodes.find((n) => n.id === selectedNodeId) ?? null;
@@ -227,14 +228,67 @@ export function PropertyPanel() {
     );
   }
 
-  // —— 空 ——
+  // —— 空：列出全部条目，点选即可编辑 ——
+  const isAllEmpty = nodes.length === 0 && edges.length === 0 && texts.length === 0;
+  if (isAllEmpty) {
+    return (
+      <Shell>
+        <div className="rail__pending">
+          <b>空空如也</b>
+          从左侧拖入素材，或用上方工具
+          <br />
+          添加连线与文本备注。
+        </div>
+      </Shell>
+    );
+  }
   return (
     <Shell>
-      <div className="rail__pending">
-        <b>尚无选中</b>
-        在画布上点选节点 / 连线 / 文本，
-        <br />
-        即可在此编辑它的细节。
+      <div className="prop-list">
+        <div className="prop-list__group">
+          <div className="prop-list__title">节点 <span>{nodes.length}</span></div>
+          {nodes.length === 0 ? (
+            <p className="prop-list__empty">尚无节点</p>
+          ) : (
+            nodes.map((n) => (
+              <button key={n.id} className="prop-list__item" onClick={() => selectNode(n.id)}>
+                <span className="prop-list__name">{n.name || '未命名节点'}</span>
+              </button>
+            ))
+          )}
+        </div>
+
+        <div className="prop-list__group">
+          <div className="prop-list__title">连线 <span>{edges.length}</span></div>
+          {edges.length === 0 ? (
+            <p className="prop-list__empty">尚无连线</p>
+          ) : (
+            edges.map((e) => {
+              const from = nodes.find((n) => n.id === e.fromNodeId);
+              const to = nodes.find((n) => n.id === e.toNodeId);
+              return (
+                <button key={e.id} className="prop-list__item" onClick={() => selectEdge(e.id)}>
+                  <span className="prop-list__name">
+                    {e.name || `${from?.name || '？'} ⟿ ${to?.name || '？'}`}
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        <div className="prop-list__group">
+          <div className="prop-list__title">文本 <span>{texts.length}</span></div>
+          {texts.length === 0 ? (
+            <p className="prop-list__empty">尚无文本备注</p>
+          ) : (
+            texts.map((t) => (
+              <button key={t.id} className="prop-list__item" onClick={() => selectText(t.id)}>
+                <span className="prop-list__name">{t.content.trim() || '（空白备注）'}</span>
+              </button>
+            ))
+          )}
+        </div>
       </div>
     </Shell>
   );

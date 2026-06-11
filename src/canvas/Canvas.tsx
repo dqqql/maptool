@@ -19,6 +19,13 @@ const COLOR_AXIS = 'rgba(140, 58, 43, 0.5)';
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const center = (n: MapNode) => ({ x: n.x + n.width / 2, y: n.y + n.height / 2 });
 
+function formatPropValue(type: string, value: string | number | boolean): string {
+  if (type === 'checkbox') return value ? '是' : '否';
+  if (type === 'rating') return `${Number(value) || 0} 星`;
+  const str = String(value ?? '').trim();
+  return str || '—';
+}
+
 export function Canvas() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
@@ -28,6 +35,7 @@ export function Canvas() {
   const [size, setSize] = useState({ w: 0, h: 0 });
   const [panning, setPanning] = useState(false);
   const [editingTextId, setEditingTextId] = useState<string | null>(null);
+  const [hoverNodeId, setHoverNodeId] = useState<string | null>(null);
   const panState = useRef<{ lastX: number; lastY: number } | null>(null);
 
   const s = useWorldStore();
@@ -126,10 +134,6 @@ export function Canvas() {
     setPanning(true);
   }
   function handleMouseDown(e: Konva.KonvaEventObject<MouseEvent>) {
-    if (mode === 'pan') {
-      startPan();
-      return;
-    }
     const onEmpty = e.target === e.target.getStage();
     if (mode === 'text') {
       if (onEmpty) {
@@ -172,9 +176,13 @@ export function Canvas() {
   }
 
   const dragEnabled = mode === 'select';
-  const cursor = mode === 'pan' ? (panning ? 'grabbing' : 'grab') : mode === 'text' ? 'text' : mode === 'connect' ? 'crosshair' : panning ? 'grabbing' : 'default';
+  const cursor = mode === 'text' ? 'text' : mode === 'connect' ? 'crosshair' : panning ? 'grabbing' : 'default';
 
   const editingBox = editingTextId ? texts.find((t) => t.id === editingTextId) : null;
+  const hoverNode =
+    mode === 'select' && !panning && !editingTextId && hoverNodeId
+      ? nodeById.get(hoverNodeId)
+      : null;
 
   return (
     <div
@@ -246,6 +254,7 @@ export function Canvas() {
                 connectSource={n.id === connectFrom}
                 onSelect={() => handleNodeClick(n.id)}
                 onChange={(patch) => updateNode(n.id, patch)}
+                onHover={(hovering) => setHoverNodeId((cur) => (hovering ? n.id : cur === n.id ? null : cur))}
                 registerRef={registerRef}
               />
             ))}
@@ -300,6 +309,35 @@ export function Canvas() {
             if (e.key === 'Escape') setEditingTextId(null);
           }}
         />
+      )}
+
+      {/* 节点悬浮浮窗：名称 + 属性 */}
+      {hoverNode && (
+        <div
+          className="node-popover"
+          style={{
+            left: hoverNode.x * viewport.scale + viewport.x + (hoverNode.width * viewport.scale) / 2,
+            top: hoverNode.y * viewport.scale + viewport.y - 10,
+          }}
+        >
+          <div className="node-popover__name">{hoverNode.name || '未命名节点'}</div>
+          {hoverNode.description.trim() && (
+            <div className="node-popover__desc">{hoverNode.description}</div>
+          )}
+          {hoverNode.customProps.length > 0 && (
+            <div className="node-popover__props">
+              {hoverNode.customProps.map((p) => (
+                <div className="node-popover__row" key={p.id}>
+                  <span className="node-popover__key">{p.label}</span>
+                  <span className="node-popover__val">{formatPropValue(p.type, p.value)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {!hoverNode.description.trim() && hoverNode.customProps.length === 0 && (
+            <div className="node-popover__empty">暂无属性</div>
+          )}
+        </div>
       )}
     </div>
   );

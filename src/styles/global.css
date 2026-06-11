@@ -144,6 +144,7 @@ h1, h2, h3 {
   box-shadow: 2px 2px 0 0 var(--seal-deep);
 }
 .ink-btn--seal:hover {
+  background: var(--seal-deep);
   box-shadow: 4px 4px 0 0 var(--seal-deep);
 }
 .ink-btn--ghost {

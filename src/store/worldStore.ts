@@ -10,7 +10,7 @@ import { getWorldData, putWorldData, touchWorld } from '../db/idb';
 const NODE_DEFAULT_SIZE = 92;
 const TEXT_DEFAULT = { width: 200, height: 96, background: 'rgba(255,250,235,0.85)', fontSize: 16 };
 
-export type ToolMode = 'select' | 'pan' | 'connect' | 'text';
+export type ToolMode = 'select' | 'connect' | 'text';
 
 interface WorldState {
   worldId: string | null;

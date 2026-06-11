@@ -29,11 +29,11 @@ function CompassRose() {
 /* —— 装饰：手绘分隔线 —— */
 function HandRule() {
   return (
-    <svg className="masthead__rule" viewBox="0 0 440 14" fill="none" stroke="currentColor" preserveAspectRatio="none" aria-hidden>
+    <svg className="masthead__rule" viewBox="0 0 440 28" fill="none" stroke="currentColor" preserveAspectRatio="none" aria-hidden>
       <g style={{ filter: 'url(#sketch)' }}>
-        <path d="M2 7 H190" strokeWidth="1.4" />
-        <path d="M438 7 H250" strokeWidth="1.4" />
-        <path d="M220 2 L232 7 L220 12 L208 7 Z" strokeWidth="1.2" fill="rgba(36,26,16,0.12)" />
+        <path d="M2 14 H190" strokeWidth="1.4" />
+        <path d="M438 14 H250" strokeWidth="1.4" />
+        <path d="M220 7 L232 14 L220 21 L208 14 Z" strokeWidth="1.2" fill="rgba(36,26,16,0.12)" />
       </g>
     </svg>
   );

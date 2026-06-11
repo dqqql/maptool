@@ -10,11 +10,10 @@ import { exportWorld } from '../serialization/worldFile';
 import { DEFAULT_VIEWPORT, type Asset } from '../types';
 import './EditorPage.css';
 
-const TOOLS: { mode: ToolMode; icon: string; label: string; tip: string }[] = [
-  { mode: 'select', icon: '✥', label: '选择', tip: '选择 / 移动 / 缩放节点（空白拖拽平移）' },
-  { mode: 'pan', icon: '✋', label: '漫游', tip: '拖拽画布平移' },
-  { mode: 'connect', icon: '⟿', label: '连线', tip: '依次点选两个节点建立连线' },
-  { mode: 'text', icon: '¶', label: '文本', tip: '在画布空白处点击新建文本备注' },
+const TOOLS: { mode: ToolMode; label: string; tip: string }[] = [
+  { mode: 'select', label: '选择', tip: '选择 / 移动 / 缩放节点（空白拖拽平移）' },
+  { mode: 'connect', label: '连线', tip: '依次点选两个节点建立连线' },
+  { mode: 'text', label: '文本', tip: '在画布空白处点击新建文本备注' },
 ];
 
 export function EditorPage() {
@@ -148,23 +147,6 @@ export function EditorPage() {
         <div className="toolbar__divider" />
         <div className="toolbar__title" title={worldName}>{worldName || '……'}</div>
         <div className="toolbar__spacer" />
-        <div className="toolbar__tools">
-          {TOOLS.map((t) => (
-            <button
-              key={t.mode}
-              className="tool"
-              aria-pressed={mode === t.mode}
-              title={t.tip}
-              onClick={() => setMode(t.mode)}
-            >
-              <span className="tool__icon">{t.icon}</span> {t.label}
-            </button>
-          ))}
-          <div className="toolbar__divider" />
-          <button className="tool tool--export" onClick={handleExport} disabled={exporting} title="导出为 JSON 存档">
-            <span className="tool__icon">⇩</span> {exporting ? '导出中…' : '导出'}
-          </button>
-        </div>
       </div>
 
       <div className="editor__body">
@@ -174,6 +156,25 @@ export function EditorPage() {
           {loaded ? (
             <>
               <Canvas />
+
+              <div className="canvas-toolbar">
+                {TOOLS.map((t) => (
+                  <button
+                    key={t.mode}
+                    className="tool"
+                    aria-pressed={mode === t.mode}
+                    title={t.tip}
+                    onClick={() => setMode(t.mode)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+                <div className="canvas-toolbar__divider" />
+                <button className="tool tool--export" onClick={handleExport} disabled={exporting} title="导出为 JSON 存档">
+                  {exporting ? '导出中…' : '导出'}
+                </button>
+              </div>
+
               {isBlank && mode === 'select' && (
                 <div className="canvas-hint">
                   <div className="canvas-hint__title">空白的羊皮纸</div>

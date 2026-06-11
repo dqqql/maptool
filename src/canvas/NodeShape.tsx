@@ -13,6 +13,7 @@ interface Props {
   connectSource: boolean; // 连线模式下作为起点高亮
   onSelect: () => void;
   onChange: (patch: Partial<MapNode>) => void;
+  onHover: (hovering: boolean) => void;
   registerRef: (id: string, ref: Konva.Group | null) => void;
 }
 
@@ -20,7 +21,7 @@ interface Props {
  * 单个画布节点：手绘素材图 + 选中外框 + 名称标签。
  * 拖拽移动、缩放（由 Canvas 的 Transformer 接管）后回写坐标/尺寸。
  */
-export function NodeShape({ node, isSelected, invScale, draggable, connectSource, onSelect, onChange, registerRef }: Props) {
+export function NodeShape({ node, isSelected, invScale, draggable, connectSource, onSelect, onChange, onHover, registerRef }: Props) {
   const groupRef = useRef<Konva.Group>(null);
   const getAsset = useLibraryStore((s) => s.getAsset);
   const asset = getAsset(node.assetId);
@@ -58,7 +59,12 @@ export function NodeShape({ node, isSelected, invScale, draggable, connectSource
       draggable={draggable}
       onMouseDown={onSelect}
       onTap={onSelect}
-      onDragStart={onSelect}
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      onDragStart={() => {
+        onHover(false);
+        onSelect();
+      }}
       onDragEnd={(e) => onChange({ x: e.target.x(), y: e.target.y() })}
       onTransformEnd={handleTransformEnd}
     >

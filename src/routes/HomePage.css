@@ -52,9 +52,10 @@
   bottom: 0;
   transform: translateX(-50%);
   width: min(440px, 70%);
-  height: 14px;
+  height: 28px;
   color: var(--line-strong);
   opacity: 0.8;
+  overflow: visible;
 }
 
 /* —— 操作条 —— */
