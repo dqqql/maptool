@@ -1,5 +1,5 @@
 import { chromium } from 'playwright';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -122,6 +122,6 @@ await page.waitForTimeout(800);
 await shot('09-imported-editor');
 
 await browser.close();
+rmSync(TEMP_DIR, { recursive: true, force: true });
 
-console.log('\n临时文件目录：' + TEMP_DIR);
-console.log('控制台错误：', errors.length ? errors : '无');
+console.log('\n控制台错误：', errors.length ? errors : '无');
