@@ -124,7 +124,7 @@ export function HomePage() {
         <header className="masthead">
           <CompassRose />
           <h1 className="masthead__title">世界舆图</h1>
-          <p className="masthead__sub">Cartographer&apos;s Atlas · A&nbsp;GM&apos;s Worldbook</p>
+          <p className="masthead__sub">山河卷册 · 主持人世界簿</p>
           <HandRule />
         </header>
 
@@ -180,7 +180,7 @@ export function HomePage() {
                 style={{ animationDelay: `${Math.min(i * 60, 480)}ms` }}
                 onClick={() => navigate(`/world/${w.id}`)}
               >
-                <span className="world-card__kicker">Realm № {String(i + 1).padStart(2, '0')}</span>
+                <span className="world-card__kicker">卷域第 {String(i + 1).padStart(2, '0')} 号</span>
                 <div className="world-card__name">{w.name}</div>
                 <div className="world-card__meta">
                   <span>开辟于&nbsp; <b>{fmtDate(w.createdAt)}</b></span>

@@ -66,7 +66,7 @@ export function EditorPage() {
     if (notFound) navigate('/', { replace: true });
   }, [notFound, navigate]);
 
-  // 快捷键：Delete 删除、Ctrl/⌘+C/V 复制粘贴节点、Ctrl/⌘+D 复制、Esc 退出模式
+  // 快捷键：删除键删除、复制粘贴快捷键、复制快捷键、退出键退出模式
   useEffect(() => {
     let clipboardNodeId: string | null = null;
     function onKey(e: KeyboardEvent) {

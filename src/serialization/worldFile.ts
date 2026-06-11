@@ -42,7 +42,7 @@ export async function exportWorld(worldId: string): Promise<void> {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const safe = world.name.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || 'world';
+  const safe = world.name.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || '世界';
   a.download = `${safe}.world.json`;
   document.body.appendChild(a);
   a.click();

@@ -97,7 +97,7 @@ export function LibraryPanel({ onPlace }: Props) {
   return (
     <aside className="rail rail--left grain-overlay">
       <div className="rail__head">素材库</div>
-      <div className="rail__sub">Material Codex</div>
+      <div className="rail__sub">素材档案</div>
 
       <div className="lib">
         <div className="lib__tabs" role="tablist" aria-label="素材来源">

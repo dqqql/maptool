@@ -35,7 +35,7 @@ function Shell({ children }: { children: React.ReactNode }) {
   return (
     <aside className="rail rail--right grain-overlay">
       <div className="rail__head">属性</div>
-      <div className="rail__sub">Annotations</div>
+      <div className="rail__sub">批注与编录</div>
       {children}
     </aside>
   );
@@ -133,7 +133,7 @@ export function PropertyPanel() {
               onChange={(e) => updateText(text.id, { content: e.target.value })} />
           </div>
           <div className="prop-field">
-            <label className="prop-label">字号 · {text.fontSize}px</label>
+            <label className="prop-label">字号 · {text.fontSize} 像素</label>
             <input type="range" min={12} max={40} value={text.fontSize} className="prop-range"
               onChange={(e) => updateText(text.id, { fontSize: Number(e.target.value) })} />
           </div>
