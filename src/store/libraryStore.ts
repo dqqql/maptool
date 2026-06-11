@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import type { Asset } from '../types';
 import { BUILTIN_ASSETS } from '../assets/builtin';
-import { listAssets, putAsset, deleteAsset } from '../db/idb';
+import { listAssets, putAsset, deleteAsset, listAssetUsages } from '../db/idb';
 
 const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 
@@ -27,6 +27,16 @@ function readAsDataUrl(file: File): Promise<string> {
     r.onerror = () => reject(new Error('读取失败'));
     r.readAsDataURL(file);
   });
+}
+
+function buildAssetInUseMessage(usages: Awaited<ReturnType<typeof listAssetUsages>>) {
+  const totalRefs = usages.reduce((sum, usage) => sum + usage.nodeCount, 0);
+  const preview = usages
+    .slice(0, 3)
+    .map((usage) => `${usage.worldName}（${usage.nodeCount} 个节点）`)
+    .join('、');
+  const suffix = usages.length > 3 ? ` 等 ${usages.length} 个世界` : '';
+  return `该素材仍被 ${totalRefs} 个节点引用：${preview}${suffix}。请先替换或删除这些节点，再移除素材。`;
 }
 
 export const useLibraryStore = create<LibraryState>((set, get) => ({
@@ -71,6 +81,10 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   },
 
   async removeUserAsset(id) {
+    const usages = await listAssetUsages(id);
+    if (usages.length > 0) {
+      throw new Error(buildAssetInUseMessage(usages));
+    }
     await deleteAsset(id);
     await get().load();
   },

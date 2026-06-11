@@ -69,6 +69,7 @@ interface WorldState {
 }
 
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
+let activeLoadToken = 0;
 
 function scheduleSave(get: () => WorldState) {
   if (saveTimer) clearTimeout(saveTimer);
@@ -112,8 +113,10 @@ export const useWorldStore = create<WorldState>((set, get) => {
     connectFrom: null,
 
     async load(worldId) {
+      const loadToken = ++activeLoadToken;
       set({ loaded: false, worldId, ...CLEARED, mode: 'select', connectFrom: null });
       const data = await getWorldData(worldId);
+      if (loadToken !== activeLoadToken || get().worldId !== worldId) return;
       set({
         worldId,
         loaded: true,
@@ -125,6 +128,7 @@ export const useWorldStore = create<WorldState>((set, get) => {
     },
 
     unload() {
+      activeLoadToken++;
       if (saveTimer) {
         clearTimeout(saveTimer);
         saveTimer = null;

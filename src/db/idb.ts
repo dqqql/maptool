@@ -9,6 +9,12 @@ import { emptyWorldData } from '../types';
 
 let dbPromise: Promise<IDBPDatabase<MapToolDB>> | null = null;
 
+export interface AssetUsage {
+  worldId: string;
+  worldName: string;
+  nodeCount: number;
+}
+
 function getDB(): Promise<IDBPDatabase<MapToolDB>> {
   if (!dbPromise) {
     dbPromise = openDB<MapToolDB>(DB_NAME, DB_VERSION, {
@@ -94,6 +100,27 @@ export async function getWorldData(worldId: string): Promise<WorldData> {
 export async function putWorldData(data: WorldData): Promise<void> {
   const db = await getDB();
   await db.put('worldData', data);
+}
+
+export async function listAssetUsages(assetId: string): Promise<AssetUsage[]> {
+  const db = await getDB();
+  const [worlds, allWorldData] = await Promise.all([
+    db.getAll('worlds'),
+    db.getAll('worldData'),
+  ]);
+  const worldNameById = new Map(worlds.map((world) => [world.id, world.name]));
+
+  return allWorldData
+    .map((data) => {
+      const nodeCount = data.nodes.filter((node) => node.assetId === assetId).length;
+      if (!nodeCount) return null;
+      return {
+        worldId: data.worldId,
+        worldName: worldNameById.get(data.worldId) ?? '未命名世界',
+        nodeCount,
+      };
+    })
+    .filter((usage): usage is AssetUsage => usage !== null);
 }
 
 /* —— assets（阶段 3+ 使用，先备好 CRUD）—— */

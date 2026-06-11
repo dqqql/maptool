@@ -31,29 +31,38 @@ export function LibraryPanel({ onPlace }: Props) {
     if (fileRef.current) fileRef.current.value = '';
   }
 
-  function startRename(a: Asset) {
-    setEditingId(a.id);
-    setDraft(a.name);
+  function startRename(asset: Asset) {
+    setEditingId(asset.id);
+    setDraft(asset.name);
   }
+
   async function commitRename() {
     if (editingId) await renameUserAsset(editingId, draft);
     setEditingId(null);
   }
 
-  function thumb(a: Asset, removable: boolean) {
+  async function handleRemoveAsset(id: string) {
+    try {
+      await removeUserAsset(id);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  function thumb(asset: Asset, removable: boolean) {
     return (
-      <div className="lib__item-wrap" key={a.id}>
+      <div className="lib__item-wrap" key={asset.id}>
         <button
           className="lib__item"
           draggable
-          title={`拖入画布放置「${a.name}」`}
-          onDragStart={(e) => onDragStart(e, a)}
-          onDoubleClick={() => onPlace(a)}
+          title={`拖入画布放置「${asset.name}」`}
+          onDragStart={(e) => onDragStart(e, asset)}
+          onDoubleClick={() => onPlace(asset)}
         >
           <span className="lib__thumb">
-            <img src={a.dataUrl} alt={a.name} draggable={false} />
+            <img src={asset.dataUrl} alt={asset.name} draggable={false} />
           </span>
-          {editingId === a.id ? (
+          {editingId === asset.id ? (
             <input
               className="lib__rename"
               autoFocus
@@ -67,13 +76,13 @@ export function LibraryPanel({ onPlace }: Props) {
               }}
             />
           ) : (
-            <span className="lib__name">{a.name}</span>
+            <span className="lib__name">{asset.name}</span>
           )}
         </button>
         {removable && (
           <div className="lib__item-tools">
-            <button className="lib__tool" title="重命名" onClick={() => startRename(a)}>✎</button>
-            <button className="lib__tool lib__tool--del" title="删除素材" onClick={() => removeUserAsset(a.id)}>✕</button>
+            <button className="lib__tool" title="重命名" onClick={() => startRename(asset)}>✎</button>
+            <button className="lib__tool lib__tool--del" title="删除素材" onClick={() => handleRemoveAsset(asset.id)}>✕</button>
           </div>
         )}
       </div>
@@ -89,17 +98,16 @@ export function LibraryPanel({ onPlace }: Props) {
         {groups.map(({ group, assets }) => (
           <section className="lib__group" key={group}>
             <h4 className="lib__group-title">{group}</h4>
-            <div className="lib__grid">{assets.map((a) => thumb(a, false))}</div>
+            <div className="lib__grid">{assets.map((asset) => thumb(asset, false))}</div>
           </section>
         ))}
 
-        {/* 用户素材 */}
         <section className="lib__group">
           <h4 className="lib__group-title">我的素材</h4>
-          {user.length > 0 && <div className="lib__grid">{user.map((a) => thumb(a, true))}</div>}
+          {user.length > 0 && <div className="lib__grid">{user.map((asset) => thumb(asset, true))}</div>}
           {user.length === 0 && <p className="lib__empty">上传 PNG / JPG / WEBP / SVG，化作你自己的图记。</p>}
           <button className="lib__upload" onClick={() => fileRef.current?.click()}>
-            ＋ 上传素材
+            + 上传素材
           </button>
           <input
             ref={fileRef}
@@ -112,7 +120,7 @@ export function LibraryPanel({ onPlace }: Props) {
         </section>
       </div>
 
-      <p className="lib__hint">拖入画布 · 或双击落于视图中心</p>
+      <p className="lib__hint">拖入画布，或双击落在视图中心</p>
     </aside>
   );
 }
