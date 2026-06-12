@@ -4,6 +4,7 @@
    四大类各 25 张，注重形态 / 色彩 / 走势差异，避免雷同。
    ========================================================================= */
 import type { Asset } from '../types';
+import { UNIVERSAL_ITEMS } from './universal';
 
 /* 调色：墨为主，淡彩为辅，皆压暗以贴合羊皮纸基调 */
 const INK = '#241a10';
@@ -153,9 +154,10 @@ const SPECS: Spec[] = [
   ...grp('水域交通', WATER),
   ...grp('聚落建筑', SETTLE),
   ...grp('事件标记', EVENT),
+  ...grp('通用组件', UNIVERSAL_ITEMS),
 ];
 
-export const BUILTIN_GROUPS = ['地形自然', '水域交通', '聚落建筑', '事件标记'] as const;
+export const BUILTIN_GROUPS = ['地形自然', '水域交通', '聚落建筑', '事件标记', '通用组件'] as const;
 
 export const BUILTIN_ASSETS: Asset[] = SPECS.map((s) => ({
   id: `builtin:${s.kind}`,

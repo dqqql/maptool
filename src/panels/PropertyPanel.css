@@ -99,6 +99,29 @@
   color: var(--paper-0);
   transform: translateY(-1px);
 }
+/* 层级按钮：统一用实心三角，置顶/置底再加一道横杠表示“到顶/到底” */
+.prop-act--layer {
+  position: relative;
+  font-size: 11px;
+  color: var(--ink);
+}
+.prop-act--top::before,
+.prop-act--bottom::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 12px;
+  height: 2.4px;
+  background: currentColor;
+  border-radius: 1px;
+}
+.prop-act--top::before {
+  top: 6px;
+}
+.prop-act--bottom::after {
+  bottom: 6px;
+}
 .prop-act--danger:hover {
   background: var(--seal);
   border-color: var(--seal-deep);

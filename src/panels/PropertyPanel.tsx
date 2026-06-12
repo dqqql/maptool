@@ -159,13 +159,13 @@ export function PropertyPanel() {
       <Shell>
         <div className="prop-actions">
           <div className="prop-actions__group" title="层级">
-            <button className="prop-act" onClick={() => bringToFront(node.id)} title="置顶">⤒</button>
-            <button className="prop-act" onClick={() => bringForward(node.id)} title="上移一层">↑</button>
-            <button className="prop-act" onClick={() => sendBackward(node.id)} title="下移一层">↓</button>
-            <button className="prop-act" onClick={() => sendToBack(node.id)} title="置底">⤓</button>
+            <button className="prop-act prop-act--layer prop-act--top" onClick={() => bringToFront(node.id)} title="置顶">▲</button>
+            <button className="prop-act prop-act--layer" onClick={() => bringForward(node.id)} title="上移一层">▲</button>
+            <button className="prop-act prop-act--layer" onClick={() => sendBackward(node.id)} title="下移一层">▼</button>
+            <button className="prop-act prop-act--layer prop-act--bottom" onClick={() => sendToBack(node.id)} title="置底">▼</button>
           </div>
           <div className="prop-actions__group">
-            <button className="prop-act" onClick={() => duplicateNode(node.id)} title="复制节点">⎘</button>
+            <button className="prop-act" onClick={() => duplicateNode(node.id)} title="复制节点">❐</button>
             <button className="prop-act prop-act--danger" onClick={() => removeNode(node.id)} title="删除节点">✕</button>
           </div>
         </div>
