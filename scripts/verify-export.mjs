@@ -88,6 +88,11 @@ const htmlSize = statSync(htmlPath).size;
 console.log(`    HTML 体积 ${(htmlSize / 1024).toFixed(0)}KB`);
 assert(htmlSize > 400 * 1024, 'HTML 自包含（>400KB）');
 assert(!htmlText.includes('__WORLD_DATA_PLACEHOLDER__'), '数据占位符已被替换');
+assert(!htmlText.includes('/@vite/client'), 'HTML 不含 Vite 开发客户端');
+assert(
+  !htmlText.includes('<script type="module" src="/src/viewer/viewer.tsx"></script>'),
+  'HTML 不依赖查看器源码脚本',
+);
 
 console.log('离线 file:// 打开只读 HTML...');
 const page2 = await browser.newPage({ viewport: { width: 1440, height: 900 } });

@@ -1,8 +1,8 @@
 /* =========================================================================
    只读 HTML 导出：取同域的 viewer.html 自包含模板，把世界数据注入占位符，
    生成一个离线可双击打开的单文件 HTML（他人可查看，不可编辑）。
-   注意：模板由 vite.viewer.config.ts 经 singlefile 构建产出到 dist/viewer.html，
-   因此该功能需在已构建/部署的环境下使用（dev 源码态下模板未内联）。
+   模板由 vite.viewer.config.ts 经 singlefile 构建；生产环境读取 dist/viewer.html，
+   开发环境由 vite.config.ts 的中间件在同一路径动态提供内联模板。
    ========================================================================= */
 import { buildWorldFile } from '../serialization/worldFile';
 import { downloadBlob } from './exportPng';
