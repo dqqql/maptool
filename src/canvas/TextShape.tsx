@@ -1,7 +1,8 @@
 import { useRef, useEffect } from 'react';
-import { Group, Rect, Text } from 'react-konva';
+import { Group, Line, Rect, Text } from 'react-konva';
 import type Konva from 'konva';
 import type { TextBox } from '../types';
+import { layoutMarkdown, TEXT_MIN_WIDTH, textBoxHeight } from './textMarkdown';
 
 interface Props {
   box: TextBox;
@@ -26,16 +27,18 @@ export function TextShape({ box, isSelected, invScale, onSelect, onChange, onEdi
     const g = ref.current;
     if (!g) return;
     const sx = g.scaleX();
-    const sy = g.scaleY();
     g.scaleX(1);
     g.scaleY(1);
+    const width = Math.max(TEXT_MIN_WIDTH, box.width * sx);
     onChange({
       x: g.x(),
       y: g.y(),
-      width: Math.max(80, box.width * sx),
-      height: Math.max(44, box.height * sy),
+      width,
+      height: textBoxHeight(box.content, width, box.fontSize),
     });
   }
+
+  const layout = layoutMarkdown(box.content, box.width, box.fontSize);
 
   return (
     <Group
@@ -64,20 +67,70 @@ export function TextShape({ box, isSelected, invScale, onSelect, onChange, onEdi
         shadowOpacity={isSelected ? 0.5 : 0.3}
         dash={isSelected ? [7 * invScale, 4 * invScale] : undefined}
       />
-      <Text
-        text={box.content || '双击编辑文本……'}
-        x={10}
-        y={9}
-        width={box.width - 20}
-        height={box.height - 18}
-        fontFamily="'Noto Serif SC', serif"
-        fontSize={box.fontSize}
-        lineHeight={1.45}
-        fill={box.content ? '#241a10' : '#a08a63'}
-        fontStyle={box.content ? 'normal' : 'italic'}
-        wrap="word"
-        listening={false}
-      />
+      {box.content ? (
+        <>
+          {layout.quotes.map((quote, index) => (
+            <Line
+              key={`quote-${index}`}
+              points={[quote.x, quote.y, quote.x, quote.y + quote.height]}
+              stroke="#8c3a2b"
+              strokeWidth={2}
+              listening={false}
+            />
+          ))}
+          {layout.rows.flatMap((row, rowIndex) => {
+            let x = row.x;
+            const nodes = [];
+            if (row.prefix) {
+              nodes.push(
+                <Text
+                  key={`prefix-${rowIndex}`}
+                  text={row.prefix}
+                  x={10}
+                  y={row.y}
+                  width={row.prefixWidth}
+                  fontFamily="'Noto Serif SC', serif"
+                  fontSize={row.fontSize}
+                  lineHeight={1.45}
+                  fill="#241a10"
+                  listening={false}
+                />
+              );
+            }
+            row.segments.forEach((segment, segmentIndex) => {
+              nodes.push(
+                <Text
+                  key={`segment-${rowIndex}-${segmentIndex}`}
+                  text={segment.text}
+                  x={x}
+                  y={row.y}
+                  fontFamily="'Noto Serif SC', serif"
+                  fontSize={row.fontSize}
+                  fontStyle={segment.bold ? 'bold' : 'normal'}
+                  lineHeight={1.45}
+                  fill="#241a10"
+                  listening={false}
+                />
+              );
+              x += segment.width;
+            });
+            return nodes;
+          })}
+        </>
+      ) : (
+        <Text
+          text="双击编辑文本……"
+          x={10}
+          y={9}
+          width={box.width - 20}
+          fontFamily="'Noto Serif SC', serif"
+          fontSize={box.fontSize}
+          lineHeight={1.45}
+          fill="#a08a63"
+          fontStyle="italic"
+          listening={false}
+        />
+      )}
     </Group>
   );
 }

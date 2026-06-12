@@ -49,6 +49,7 @@ export function NodeShape({ node, isSelected, invScale, draggable, connectSource
   }
 
   const pad = 6; // 选中框外扩
+  const labelFontSize = Math.min(26, Math.max(15, 15 + (Math.min(node.width, node.height) - 92) * 0.035));
 
   return (
     <Group
@@ -108,7 +109,7 @@ export function NodeShape({ node, isSelected, invScale, draggable, connectSource
         width={node.width + pad * 2}
         align="center"
         fontFamily="'Noto Serif SC', serif"
-        fontSize={13 * invScale}
+        fontSize={labelFontSize * invScale}
         fontStyle={isSelected ? 'bold' : 'normal'}
         fill={isSelected ? '#8c3a2b' : '#4d3c26'}
         listening={false}

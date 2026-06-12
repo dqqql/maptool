@@ -276,6 +276,7 @@ export function Canvas() {
             <Transformer
               ref={trRef}
               rotateEnabled={!selectedTextId}
+              enabledAnchors={selectedTextId ? ['middle-left', 'middle-right'] : undefined}
               rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
               anchorSize={9}
               anchorCornerRadius={5}
@@ -294,6 +295,7 @@ export function Canvas() {
         <textarea
           className="text-edit-overlay"
           autoFocus
+          rows={1}
           value={editingBox.content}
           style={{
             left: editingBox.x * viewport.scale + viewport.x,

@@ -6,9 +6,10 @@ import { create } from 'zustand';
 import type { Viewport, WorldData, MapNode, Edge, TextBox, CustomProp } from '../types';
 import { DEFAULT_VIEWPORT } from '../types';
 import { getWorldData, putWorldData, touchWorld } from '../db/idb';
+import { textBoxHeight } from '../canvas/textMarkdown';
 
 const NODE_DEFAULT_SIZE = 92;
-const TEXT_DEFAULT = { width: 200, height: 96, background: 'rgba(255,250,235,0.85)', fontSize: 16 };
+const TEXT_DEFAULT = { width: 200, background: 'rgba(255,250,235,0.85)', fontSize: 16 };
 
 export type ToolMode = 'select' | 'connect' | 'text';
 
@@ -123,7 +124,10 @@ export const useWorldStore = create<WorldState>((set, get) => {
         viewport: data.viewport ?? { ...DEFAULT_VIEWPORT },
         nodes: data.nodes ?? [],
         edges: data.edges ?? [],
-        texts: data.texts ?? [],
+        texts: (data.texts ?? []).map((text) => ({
+          ...text,
+          height: textBoxHeight(text.content, text.width, text.fontSize),
+        })),
       });
     },
 
@@ -277,13 +281,14 @@ export const useWorldStore = create<WorldState>((set, get) => {
 
     addText(x, y) {
       const id = crypto.randomUUID();
+      const height = textBoxHeight('', TEXT_DEFAULT.width, TEXT_DEFAULT.fontSize);
       const box: TextBox = {
         id,
         content: '',
         x: x - TEXT_DEFAULT.width / 2,
-        y: y - TEXT_DEFAULT.height / 2,
+        y: y - height / 2,
         width: TEXT_DEFAULT.width,
-        height: TEXT_DEFAULT.height,
+        height,
         background: TEXT_DEFAULT.background,
         fontSize: TEXT_DEFAULT.fontSize,
       };
@@ -291,7 +296,16 @@ export const useWorldStore = create<WorldState>((set, get) => {
       return id;
     },
     updateText(id, patch) {
-      mutate((s) => ({ texts: s.texts.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
+      mutate((s) => ({
+        texts: s.texts.map((text) => {
+          if (text.id !== id) return text;
+          const next = { ...text, ...patch };
+          if ('content' in patch || 'width' in patch || 'fontSize' in patch) {
+            next.height = textBoxHeight(next.content, next.width, next.fontSize);
+          }
+          return next;
+        }),
+      }));
     },
     removeText(id) {
       mutate((s) => ({

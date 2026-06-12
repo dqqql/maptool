@@ -102,11 +102,6 @@ export function PropertyPanel() {
               onChange={(e) => updateEdge(edge.id, { name: e.target.value })} />
           </div>
           <div className="prop-field">
-            <label className="prop-label">类型</label>
-            <input className="ink-field" value={edge.edgeType} placeholder="如：道路 / 隶属 / 敌对……"
-              onChange={(e) => updateEdge(edge.id, { edgeType: e.target.value })} />
-          </div>
-          <div className="prop-field">
             <label className="prop-label">描述</label>
             <textarea className="ink-field prop-textarea" rows={4} value={edge.description}
               placeholder="记下这段关系的来龙去脉……"
