@@ -33,6 +33,7 @@ export function LibraryPanel({ onPlace, onFloatPlace }: Props) {
   const groups = useMemo(() => builtinByGroup(), []);
 
   const fileRef = useRef<HTMLInputElement>(null);
+  const modalTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [activeTab, setActiveTab] = useState<LibraryTab>('builtin');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
@@ -162,7 +163,10 @@ export function LibraryPanel({ onPlace, onFloatPlace }: Props) {
                     <button
                       className="lib__more"
                       title={`查看全部「${sec.group}」素材 · 自定义快捷栏`}
-                      onClick={() => setModalGroup(sec.group)}
+                      onClick={(e) => {
+                        modalTriggerRef.current = e.currentTarget;
+                        setModalGroup(sec.group);
+                      }}
                     >
                       <span className="lib__more-ico">···</span>
                       <span className="lib__more-txt">更多</span>
@@ -204,6 +208,7 @@ export function LibraryPanel({ onPlace, onFloatPlace }: Props) {
         open={modalOpen}
         initialGroup={modalGroup}
         quickSlots={quickSlots}
+        returnFocus={modalTriggerRef.current}
         onChangeSlots={setQuickSlots}
         onResetSlots={resetQuickSlots}
         onClose={() => setModalGroup(undefined)}

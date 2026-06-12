@@ -214,10 +214,12 @@
   border: 1.2px solid var(--seal-deep);
   border-radius: 50%;
   cursor: pointer;
-  opacity: 0;
+  opacity: 0.68;
   transition: opacity 0.14s var(--ease);
 }
-.alib-slot:hover .alib-slot__x {
+.alib-slot:hover .alib-slot__x,
+.alib-slot:focus-within .alib-slot__x,
+.alib-slot__x:focus-visible {
   opacity: 1;
 }
 

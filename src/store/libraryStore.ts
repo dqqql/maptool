@@ -4,7 +4,13 @@
    ========================================================================= */
 import { create } from 'zustand';
 import type { Asset } from '../types';
-import { BUILTIN_ASSETS, BUILTIN_ID_SET, QUICK_SLOT_COUNT, defaultQuickSlots } from '../assets/builtin';
+import {
+  BUILTIN_ASSETS,
+  BUILTIN_ID_SET,
+  QUICK_SLOT_COUNT,
+  defaultQuickSlots,
+  getBuiltinAsset,
+} from '../assets/builtin';
 import { listAssets, putAsset, deleteAsset, listAssetUsages } from '../db/idb';
 
 const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
@@ -88,8 +94,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   },
 
   getAsset(id) {
-    const { builtin, user } = get();
-    return builtin.find((a) => a.id === id) ?? user.find((a) => a.id === id);
+    return getBuiltinAsset(id) ?? get().user.find((a) => a.id === id);
   },
 
   async uploadFiles(files) {

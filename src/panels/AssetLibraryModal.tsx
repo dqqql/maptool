@@ -4,7 +4,8 @@
    - 选中某分类后，顶部出现该分类「快捷栏」槽位（共 QUICK_SLOT_COUNT 个）：
      从素材网格拖入放置、把槽位拖出或点 ✕ 卸除、槽位之间拖动交换。
    ========================================================================= */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { BUILTIN_ASSETS, BUILTIN_GROUPS, QUICK_SLOT_COUNT, builtinByGroup } from '../assets/builtin';
 import type { Asset } from '../types';
 import './AssetLibraryModal.css';
@@ -13,6 +14,7 @@ interface Props {
   open: boolean;
   initialGroup?: string | null;
   quickSlots: Record<string, (string | null)[]>;
+  returnFocus: HTMLElement | null;
   onChangeSlots: (group: string, slots: (string | null)[]) => void;
   onResetSlots: (group: string) => void;
   onClose: () => void;
@@ -22,11 +24,18 @@ interface Props {
 const ALL = '全部';
 const PICK = 'application/x-slot-pick'; // 网格素材 → 槽位（携带 assetId）
 const FROM = 'application/x-slot-from'; // 槽位 → 别处（携带源槽位下标）
+const FOCUSABLE = [
+  'button:not([disabled])',
+  'input:not([disabled])',
+  '[href]',
+  '[tabindex]:not([tabindex="-1"])',
+].join(',');
 
 export function AssetLibraryModal({
   open,
   initialGroup,
   quickSlots,
+  returnFocus,
   onChangeSlots,
   onResetSlots,
   onClose,
@@ -34,9 +43,16 @@ export function AssetLibraryModal({
 }: Props) {
   const [group, setGroup] = useState<string>(ALL);
   const [query, setQuery] = useState('');
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
+  const onCloseRef = useRef(onClose);
 
   const groups = useMemo(() => builtinByGroup(), []);
   const byId = useMemo(() => new Map(BUILTIN_ASSETS.map((a) => [a.id, a])), []);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
   // 每次打开时重置筛选与关键字到入口分类
   useEffect(() => {
@@ -46,15 +62,54 @@ export function AssetLibraryModal({
     }
   }, [open, initialGroup]);
 
-  // Esc 关闭
+  // 隔离背景、锁定焦点，并在关闭后把焦点还给入口。
   useEffect(() => {
     if (!open) return;
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const appRoot = document.getElementById('root');
+    const rootWasInert = appRoot?.hasAttribute('inert') ?? false;
+    appRoot?.setAttribute('inert', '');
+
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(FOCUSABLE))
+        .filter((element) => !element.hidden && element.getAttribute('aria-hidden') !== 'true');
+      if (focusable.length === 0) {
+        e.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     }
+
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+    const focusFrame = requestAnimationFrame(() => {
+      searchRef.current?.focus();
+    });
+    return () => {
+      cancelAnimationFrame(focusFrame);
+      window.removeEventListener('keydown', onKey);
+      if (!rootWasInert) appRoot?.removeAttribute('inert');
+      (returnFocus ?? previousFocus)?.focus();
+    };
+  }, [open, returnFocus]);
 
   if (!open) return null;
 
@@ -96,12 +151,20 @@ export function AssetLibraryModal({
 
   const total = sections.reduce((n, s) => n + s.assets.length, 0);
 
-  return (
+  return createPortal(
     <div className="alib-mask" onMouseDown={onClose}>
-      <div className="alib" onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        ref={dialogRef}
+        className="alib"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="asset-library-title"
+        tabIndex={-1}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <header className="alib__head">
           <div>
-            <h2 className="alib__title">素材库</h2>
+            <h2 className="alib__title" id="asset-library-title">素材库</h2>
             <p className="alib__sub">单击素材即可取出，移到画布上再次单击落下</p>
           </div>
           <button className="alib__close" onClick={onClose} title="关闭（Esc）">✕</button>
@@ -109,6 +172,7 @@ export function AssetLibraryModal({
 
         <div className="alib__bar">
           <input
+            ref={searchRef}
             className="alib__search"
             placeholder="搜索素材名称…"
             value={query}
@@ -222,6 +286,7 @@ export function AssetLibraryModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

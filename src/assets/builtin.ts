@@ -167,12 +167,23 @@ export const BUILTIN_ASSETS: Asset[] = SPECS.map((s) => ({
   dataUrl: svg(s.inner),
 }));
 
+const LEGACY_BUILTIN_IDS: Record<string, string> = {
+  'builtin:mountain': 'builtin:peak',
+  'builtin:ruin': 'builtin:ruins',
+  'builtin:marker': 'builtin:pin',
+};
+const BUILTIN_ASSET_BY_ID = new Map(BUILTIN_ASSETS.map((asset) => [asset.id, asset]));
+
+/** Resolve assets saved by versions before the built-in library redesign. */
+export function getBuiltinAsset(id: string): Asset | undefined {
+  return BUILTIN_ASSET_BY_ID.get(LEGACY_BUILTIN_IDS[id] ?? id);
+}
+
 /** 分组后的内置素材，供素材库面板分类展示 */
 export function builtinByGroup(): { group: string; assets: Asset[] }[] {
-  const byId = new Map(BUILTIN_ASSETS.map((a) => [a.id, a]));
   return BUILTIN_GROUPS.map((group) => ({
     group,
-    assets: SPECS.filter((s) => s.group === group).map((s) => byId.get(`builtin:${s.kind}`)!),
+    assets: SPECS.filter((s) => s.group === group).map((s) => BUILTIN_ASSET_BY_ID.get(`builtin:${s.kind}`)!),
   }));
 }
 
