@@ -23,6 +23,9 @@ export function EditorPage() {
   const [notFound, setNotFound] = useState(false);
   const [exporting, setExporting] = useState(false);
 
+  const [floating, setFloating] = useState<Asset | null>(null);
+  const [cursor, setCursor] = useState({ x: 0, y: 0 });
+
   const loaded = useWorldStore((s) => s.loaded);
   const viewport = useWorldStore((s) => s.viewport);
   const nodes = useWorldStore((s) => s.nodes);
@@ -114,6 +117,39 @@ export function EditorPage() {
     setViewport({ ...DEFAULT_VIEWPORT });
   }
 
+  // —— 大窗口取出后的「拖曳放置」流程 ——
+  function startFloat(asset: Asset) {
+    setCursor({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    setFloating(asset);
+  }
+  function placeFloating(e: React.MouseEvent) {
+    if (!floating) return;
+    const wrap = document.querySelector('.canvas-wrap') as HTMLElement | null;
+    if (wrap) {
+      const rect = wrap.getBoundingClientRect();
+      const vp = useWorldStore.getState().viewport;
+      const wx = (e.clientX - rect.left - vp.x) / vp.scale;
+      const wy = (e.clientY - rect.top - vp.y) / vp.scale;
+      addNode(floating.id, floating.name, wx, wy);
+    }
+    setFloating(null);
+  }
+  useEffect(() => {
+    if (!floating) return;
+    function onMove(e: MouseEvent) {
+      setCursor({ x: e.clientX, y: e.clientY });
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setFloating(null);
+    }
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [floating]);
+
   function placeAtCenter(asset: Asset) {
     const col = document.querySelector('.canvas-col') as HTMLElement | null;
     const cx = col ? col.clientWidth / 2 : 400;
@@ -150,7 +186,7 @@ export function EditorPage() {
       </div>
 
       <div className="editor__body">
-        <LibraryPanel onPlace={placeAtCenter} />
+        <LibraryPanel onPlace={placeAtCenter} onFloatPlace={startFloat} />
 
         <div className="canvas-col grain-overlay">
           {loaded ? (
@@ -198,8 +234,14 @@ export function EditorPage() {
                 <button className="hud__home" onClick={resetView} title="回到原点">⊹ 回到原点</button>
               </div>
 
-              {hasSelection && mode === 'select' && (
+              {hasSelection && mode === 'select' && !floating && (
                 <div className="canvas-tip">Delete 删除 · Ctrl/⌘+D 复制 · 拖角缩放</div>
+              )}
+
+              {floating && (
+                <div className="place-overlay" onClick={placeFloating}>
+                  <div className="place-banner">单击放置「{floating.name}」 · Esc 取消</div>
+                </div>
               )}
             </>
           ) : (
@@ -209,6 +251,16 @@ export function EditorPage() {
 
         <PropertyPanel />
       </div>
+
+      {floating && (
+        <img
+          className="place-ghost"
+          src={floating.dataUrl}
+          alt=""
+          draggable={false}
+          style={{ left: cursor.x, top: cursor.y }}
+        />
+      )}
     </div>
   );
 }

@@ -412,6 +412,43 @@
   animation: ink-in 0.4s var(--ease) both;
 }
 
+/* —— 拖曳放置：覆盖画布的拾取层 + 跟随光标的素材虚影 —— */
+.place-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  cursor: copy;
+  background: rgba(36, 26, 16, 0.04);
+}
+.place-banner {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  font-family: var(--font-serif);
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: var(--paper-0);
+  border: 1.5px solid var(--line-strong);
+  border-radius: 20px;
+  padding: 6px 18px;
+  box-shadow: var(--shadow-soft);
+  pointer-events: none;
+}
+.place-ghost {
+  position: fixed;
+  z-index: 60;
+  width: 72px;
+  height: 72px;
+  margin-left: -36px;
+  margin-top: -36px;
+  object-fit: contain;
+  pointer-events: none;
+  opacity: 0.92;
+  filter: drop-shadow(2px 4px 3px rgba(36, 26, 16, 0.4));
+}
+
 /* 载入态 */
 .editor__loading {
   position: absolute;

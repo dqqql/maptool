@@ -1,14 +1,21 @@
-import { useRef, useState } from 'react';
-import { BUILTIN_ASSETS } from '../assets/builtin';
+import { useMemo, useRef, useState } from 'react';
+import { builtinByGroup } from '../assets/builtin';
 import { useLibraryStore } from '../store/libraryStore';
 import type { Asset } from '../types';
+import { AssetLibraryModal } from './AssetLibraryModal';
 import './LibraryPanel.css';
 
 interface Props {
+  /** 双击素材：落在视图中心 */
   onPlace: (asset: Asset) => void;
+  /** 从大窗口取出素材：进入拖曳放置流程 */
+  onFloatPlace: (asset: Asset) => void;
 }
 
 type LibraryTab = 'builtin' | 'user';
+
+/** 每个分类在侧栏直接展示的素材数（第 6 格留给「更多」）*/
+const PREVIEW_PER_GROUP = 5;
 
 function onDragStart(e: React.DragEvent, asset: Asset) {
   e.dataTransfer.setData('application/x-asset-id', asset.id);
@@ -16,18 +23,21 @@ function onDragStart(e: React.DragEvent, asset: Asset) {
   e.dataTransfer.effectAllowed = 'copy';
 }
 
-export function LibraryPanel({ onPlace }: Props) {
+export function LibraryPanel({ onPlace, onFloatPlace }: Props) {
   const user = useLibraryStore((s) => s.user);
   const uploadFiles = useLibraryStore((s) => s.uploadFiles);
   const renameUserAsset = useLibraryStore((s) => s.renameUserAsset);
   const removeUserAsset = useLibraryStore((s) => s.removeUserAsset);
 
+  const groups = useMemo(() => builtinByGroup(), []);
+
   const fileRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<LibraryTab>('builtin');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  const [modalGroup, setModalGroup] = useState<string | null | undefined>(undefined);
 
-  const visibleAssets = activeTab === 'builtin' ? BUILTIN_ASSETS : user;
+  const modalOpen = modalGroup !== undefined;
 
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
@@ -54,7 +64,25 @@ export function LibraryPanel({ onPlace }: Props) {
     }
   }
 
-  function thumb(asset: Asset) {
+  function builtinThumb(asset: Asset) {
+    return (
+      <button
+        className="lib__item"
+        key={asset.id}
+        draggable
+        title={`拖入画布放置「${asset.name}」`}
+        onDragStart={(e) => onDragStart(e, asset)}
+        onDoubleClick={() => onPlace(asset)}
+      >
+        <span className="lib__thumb">
+          <img src={asset.dataUrl} alt={asset.name} draggable={false} />
+        </span>
+        <span className="lib__name">{asset.name}</span>
+      </button>
+    );
+  }
+
+  function userThumb(asset: Asset) {
     return (
       <div className="lib__item-wrap" key={asset.id}>
         <button
@@ -84,12 +112,10 @@ export function LibraryPanel({ onPlace }: Props) {
             <span className="lib__name">{asset.name}</span>
           )}
         </button>
-        {!asset.builtin && (
-          <div className="lib__item-tools">
-            <button className="lib__tool" title="重命名" onClick={() => startRename(asset)}>✎</button>
-            <button className="lib__tool lib__tool--del" title="删除素材" onClick={() => handleRemoveAsset(asset.id)}>✕</button>
-          </div>
-        )}
+        <div className="lib__item-tools">
+          <button className="lib__tool" title="重命名" onClick={() => startRename(asset)}>✎</button>
+          <button className="lib__tool lib__tool--del" title="删除素材" onClick={() => handleRemoveAsset(asset.id)}>✕</button>
+        </div>
       </div>
     );
   }
@@ -121,30 +147,62 @@ export function LibraryPanel({ onPlace }: Props) {
           </button>
         </div>
 
-        {activeTab === 'user' && (
-          <div className="lib__actions">
-            <button className="lib__upload" onClick={() => fileRef.current?.click()}>
-              + 上传素材
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/png,image/jpeg,image/webp,image/svg+xml"
-              multiple
-              hidden
-              onChange={(e) => handleFiles(e.target.files)}
-            />
+        {activeTab === 'builtin' && (
+          <div className="lib__cats">
+            {groups.map((sec) => (
+              <section className="lib__cat-sec" key={sec.group}>
+                <h3 className="lib__cat-head">{sec.group}</h3>
+                <div className="lib__grid">
+                  {sec.assets.slice(0, PREVIEW_PER_GROUP).map(builtinThumb)}
+                  <button
+                    className="lib__more"
+                    title={`查看全部「${sec.group}」素材`}
+                    onClick={() => setModalGroup(sec.group)}
+                  >
+                    <span className="lib__more-ico">···</span>
+                    <span className="lib__more-txt">更多</span>
+                  </button>
+                </div>
+              </section>
+            ))}
           </div>
         )}
 
-        {activeTab === 'user' && user.length === 0 ? (
-          <p className="lib__empty">上传 PNG / JPG / WEBP / SVG，化作你自己的图记。</p>
-        ) : (
-          <div className="lib__grid">{visibleAssets.map((asset) => thumb(asset))}</div>
+        {activeTab === 'user' && (
+          <>
+            <div className="lib__actions">
+              <button className="lib__upload" onClick={() => fileRef.current?.click()}>
+                + 上传素材
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                multiple
+                hidden
+                onChange={(e) => handleFiles(e.target.files)}
+              />
+            </div>
+            {user.length === 0 ? (
+              <p className="lib__empty">上传 PNG / JPG / WEBP / SVG，化作你自己的图记。</p>
+            ) : (
+              <div className="lib__grid">{user.map(userThumb)}</div>
+            )}
+          </>
         )}
       </div>
 
       <p className="lib__hint">拖入画布，或双击落在视图中心</p>
+
+      <AssetLibraryModal
+        open={modalOpen}
+        initialGroup={modalGroup}
+        onClose={() => setModalGroup(undefined)}
+        onPick={(asset) => {
+          setModalGroup(undefined);
+          onFloatPlace(asset);
+        }}
+      />
     </aside>
   );
 }

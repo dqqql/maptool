@@ -43,10 +43,73 @@
 .lib__actions {
   margin-bottom: 12px;
 }
+
+/* 内置素材：分类分区 */
+.lib__cats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lib__cat-sec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lib__cat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-family: var(--font-hand);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.lib__cat-head::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
 .lib__grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+}
+
+/* 「更多」入口（占第 6 格）*/
+.lib__more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  background: rgba(255, 250, 235, 0.4);
+  border: 1.5px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink-faint);
+  transition: all 0.16s var(--ease);
+}
+.lib__more:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+  background: rgba(255, 250, 235, 0.7);
+  transform: translateY(-2px);
+}
+.lib__more-ico {
+  font-size: 22px;
+  line-height: 0.7;
+  letter-spacing: 1px;
+}
+.lib__more-txt {
+  font-family: var(--font-serif);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
 }
 .lib__item {
   display: flex;
