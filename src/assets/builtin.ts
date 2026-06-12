@@ -180,3 +180,20 @@ const NAME_BY_KIND = new Map(SPECS.map((s) => [s.kind, s.name]));
 export function defaultNodeName(kind: string): string {
   return NAME_BY_KIND.get(kind) ?? '新节点';
 }
+
+/** 每个分类的快捷栏槽位数 */
+export const QUICK_SLOT_COUNT = 5;
+
+/** 所有内置素材 id 集合，用于校验快捷栏配置 */
+export const BUILTIN_ID_SET = new Set(BUILTIN_ASSETS.map((a) => a.id));
+
+/** 快捷栏默认配置：每个分类取前 N 个素材，不足补 null */
+export function defaultQuickSlots(): Record<string, (string | null)[]> {
+  const out: Record<string, (string | null)[]> = {};
+  for (const { group, assets } of builtinByGroup()) {
+    const ids: (string | null)[] = assets.slice(0, QUICK_SLOT_COUNT).map((a) => a.id);
+    while (ids.length < QUICK_SLOT_COUNT) ids.push(null);
+    out[group] = ids;
+  }
+  return out;
+}

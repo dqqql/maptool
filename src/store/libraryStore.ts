@@ -4,20 +4,57 @@
    ========================================================================= */
 import { create } from 'zustand';
 import type { Asset } from '../types';
-import { BUILTIN_ASSETS } from '../assets/builtin';
+import { BUILTIN_ASSETS, BUILTIN_ID_SET, QUICK_SLOT_COUNT, defaultQuickSlots } from '../assets/builtin';
 import { listAssets, putAsset, deleteAsset, listAssetUsages } from '../db/idb';
 
 const ACCEPTED = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+
+/** 快捷栏配置：分类 → 长度固定为 QUICK_SLOT_COUNT 的 id 数组（null 表示空槽）*/
+type QuickSlots = Record<string, (string | null)[]>;
+const QS_KEY = 'maptool.quickslots.v1';
+
+function loadQuickSlots(): QuickSlots {
+  const def = defaultQuickSlots();
+  try {
+    const raw = JSON.parse(localStorage.getItem(QS_KEY) ?? 'null');
+    if (raw && typeof raw === 'object') {
+      for (const group of Object.keys(def)) {
+        const saved = (raw as Record<string, unknown>)[group];
+        if (Array.isArray(saved)) {
+          const arr = saved
+            .slice(0, QUICK_SLOT_COUNT)
+            .map((v) => (typeof v === 'string' && BUILTIN_ID_SET.has(v) ? v : null));
+          while (arr.length < QUICK_SLOT_COUNT) arr.push(null);
+          def[group] = arr;
+        }
+      }
+    }
+  } catch {
+    /* 配置损坏则回退默认 */
+  }
+  return def;
+}
+
+function saveQuickSlots(qs: QuickSlots) {
+  try {
+    localStorage.setItem(QS_KEY, JSON.stringify(qs));
+  } catch {
+    /* 忽略写入失败 */
+  }
+}
 
 interface LibraryState {
   builtin: Asset[];
   user: Asset[];
   loaded: boolean;
+  quickSlots: QuickSlots;
   load: () => Promise<void>;
   getAsset: (id: string) => Asset | undefined;
   uploadFiles: (files: FileList | File[]) => Promise<number>;
   renameUserAsset: (id: string, name: string) => Promise<void>;
   removeUserAsset: (id: string) => Promise<void>;
+  setQuickSlots: (group: string, slots: (string | null)[]) => void;
+  resetQuickSlots: (group: string) => void;
 }
 
 function readAsDataUrl(file: File): Promise<string> {
@@ -43,6 +80,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
   builtin: BUILTIN_ASSETS,
   user: [],
   loaded: false,
+  quickSlots: loadQuickSlots(),
 
   async load() {
     const stored = await listAssets();
@@ -87,5 +125,20 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     }
     await deleteAsset(id);
     await get().load();
+  },
+
+  setQuickSlots(group, slots) {
+    const arr = slots.slice(0, QUICK_SLOT_COUNT);
+    while (arr.length < QUICK_SLOT_COUNT) arr.push(null);
+    const next = { ...get().quickSlots, [group]: arr };
+    saveQuickSlots(next);
+    set({ quickSlots: next });
+  },
+
+  resetQuickSlots(group) {
+    const def = defaultQuickSlots()[group] ?? Array(QUICK_SLOT_COUNT).fill(null);
+    const next = { ...get().quickSlots, [group]: def };
+    saveQuickSlots(next);
+    set({ quickSlots: next });
   },
 }));

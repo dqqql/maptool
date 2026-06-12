@@ -14,9 +14,6 @@ interface Props {
 
 type LibraryTab = 'builtin' | 'user';
 
-/** 每个分类在侧栏直接展示的素材数（第 6 格留给「更多」）*/
-const PREVIEW_PER_GROUP = 5;
-
 function onDragStart(e: React.DragEvent, asset: Asset) {
   e.dataTransfer.setData('application/x-asset-id', asset.id);
   e.dataTransfer.setData('application/x-asset-name', asset.name);
@@ -28,6 +25,10 @@ export function LibraryPanel({ onPlace, onFloatPlace }: Props) {
   const uploadFiles = useLibraryStore((s) => s.uploadFiles);
   const renameUserAsset = useLibraryStore((s) => s.renameUserAsset);
   const removeUserAsset = useLibraryStore((s) => s.removeUserAsset);
+  const getAsset = useLibraryStore((s) => s.getAsset);
+  const quickSlots = useLibraryStore((s) => s.quickSlots);
+  const setQuickSlots = useLibraryStore((s) => s.setQuickSlots);
+  const resetQuickSlots = useLibraryStore((s) => s.resetQuickSlots);
 
   const groups = useMemo(() => builtinByGroup(), []);
 
@@ -149,22 +150,27 @@ export function LibraryPanel({ onPlace, onFloatPlace }: Props) {
 
         {activeTab === 'builtin' && (
           <div className="lib__cats">
-            {groups.map((sec) => (
-              <section className="lib__cat-sec" key={sec.group}>
-                <h3 className="lib__cat-head">{sec.group}</h3>
-                <div className="lib__grid">
-                  {sec.assets.slice(0, PREVIEW_PER_GROUP).map(builtinThumb)}
-                  <button
-                    className="lib__more"
-                    title={`查看全部「${sec.group}」素材`}
-                    onClick={() => setModalGroup(sec.group)}
-                  >
-                    <span className="lib__more-ico">···</span>
-                    <span className="lib__more-txt">更多</span>
-                  </button>
-                </div>
-              </section>
-            ))}
+            {groups.map((sec) => {
+              const slotAssets = (quickSlots[sec.group] ?? [])
+                .map((id) => (id ? getAsset(id) : undefined))
+                .filter((a): a is Asset => !!a);
+              return (
+                <section className="lib__cat-sec" key={sec.group}>
+                  <h3 className="lib__cat-head">{sec.group}</h3>
+                  <div className="lib__grid">
+                    {slotAssets.map(builtinThumb)}
+                    <button
+                      className="lib__more"
+                      title={`查看全部「${sec.group}」素材 · 自定义快捷栏`}
+                      onClick={() => setModalGroup(sec.group)}
+                    >
+                      <span className="lib__more-ico">···</span>
+                      <span className="lib__more-txt">更多</span>
+                    </button>
+                  </div>
+                </section>
+              );
+            })}
           </div>
         )}
 
@@ -197,6 +203,9 @@ export function LibraryPanel({ onPlace, onFloatPlace }: Props) {
       <AssetLibraryModal
         open={modalOpen}
         initialGroup={modalGroup}
+        quickSlots={quickSlots}
+        onChangeSlots={setQuickSlots}
+        onResetSlots={resetQuickSlots}
         onClose={() => setModalGroup(undefined)}
         onPick={(asset) => {
           setModalGroup(undefined);
