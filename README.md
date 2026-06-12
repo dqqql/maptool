@@ -16,6 +16,7 @@
 - **节点属性**：名称、描述及自定义属性，支持文本、多行文本、复选、下拉、数字、星级和进度格。
 - **关系连线**：依次选择两个节点建立连线，可填写名称和描述，节点移动时连线自动跟随。
 - **文本备注**：初始为单行，按回车增加行数，外框始终随内容等高；可调字号、背景和宽度。
+- **优美导出**：一键导出高清 PNG（按全图自动取景或导出当前视图），或导出自包含的离线只读 HTML——他人双击即可缩放、平移、悬浮查看节点属性，但无法编辑。
 - **本地存储**：世界、画布和用户素材均保存在 IndexedDB，不上传服务器。
 
 ## 文本 Markdown
@@ -41,7 +42,7 @@
 | 文本 | 在空白处点击创建文本备注，双击文本框直接编辑 |
 | 素材拖放 | 从左侧快捷栏拖入画布；双击素材可放到当前视图中心 |
 | 完整素材库 | 点击分类中的“更多”，搜索素材或自定义快捷槽位 |
-| 导出 | 下载当前世界及其用户素材为 `*.world.json` |
+| 导出 | 「导出」菜单：高清图片（全图 / 当前视图）、只读 HTML、或 `*.world.json` 存档 |
 
 快捷键：
 
@@ -69,7 +70,12 @@ npm run build
 npm run preview
 ```
 
-开发服务器默认运行在 `http://localhost:5173`，生产构建输出到 `dist/`。
+开发服务器默认运行在 `http://localhost:5173`。生产构建分两步（已由 `npm run build` 串联）：先构建应用本体，再用 `vite.viewer.config.ts` 把只读查看器打成自包含模板。两者一同输出到 `dist/`：
+
+- `dist/index.html` —— 应用本体。
+- `dist/viewer.html` —— 「只读 HTML 导出」所用的自包含模板（内联 React/Konva 与渲染器，仅留一个数据占位符）。导出时由 `src/export/exportHtml.ts` 取同域的该模板并注入世界数据。
+
+> 部署到静态托管（如 Cloudflare Pages）时，构建命令为 `npm run build`、输出目录为 `dist`，`viewer.html` 会随主站同目录发布。应用使用 HashRouter，无需额外的 SPA 重写规则。「只读 HTML 导出」需在已部署/预览的在线环境下使用（dev 源码态下模板尚未内联）。
 
 ## 目录结构
 
@@ -77,12 +83,15 @@ npm run preview
 src/
   assets/             内置 SVG 素材及通用组件
   canvas/             Konva 画布、节点、连线、文本与 Markdown 排版
+  components/         通用 UI 组件（导出菜单等）
   db/                 IndexedDB schema 和 CRUD
+  export/             高清 PNG 与只读 HTML 导出
   panels/             素材库、属性面板及弹窗
   routes/             世界首页与编辑器页面
   serialization/      世界 JSON 导入导出
   store/              Zustand 世界与素材状态
   styles/             全局设计系统和羊皮纸主题
+  viewer/             只读查看器（自包含 HTML 入口）
   App.tsx             应用路由
   types.ts            领域模型
 ```

@@ -6,7 +6,7 @@
   "description": "面向 GM 的 TRPG 世界整理工具 —— 黑白手绘 + 羊皮纸风无限画布",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && vite build --config vite.viewer.config.ts",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -24,6 +24,7 @@
     "@vitejs/plugin-react": "^4.3.1",
     "playwright": "^1.60.0",
     "typescript": "^5.5.4",
-    "vite": "^5.4.6"
+    "vite": "^5.4.6",
+    "vite-plugin-singlefile": "^2.3.3"
   }
 }

@@ -286,6 +286,43 @@
   box-shadow: 2px 2px 0 0 var(--seal-deep);
 }
 
+/* 导出下拉菜单 */
+.export-menu {
+  position: relative;
+}
+.export-menu__list {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 188px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: 2px;
+  background: var(--paper-0);
+  border: 1.5px solid var(--line-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-lift);
+  z-index: 8;
+  animation: ink-in 0.16s var(--ease) both;
+}
+.export-menu__item {
+  text-align: left;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--ink-soft);
+  background: transparent;
+  border: none;
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: background 0.14s var(--ease), color 0.14s var(--ease);
+}
+.export-menu__item:hover {
+  background: var(--ink);
+  color: var(--paper-0);
+}
+
 /* 模式提示横幅 */
 .canvas-mode-banner {
   position: absolute;

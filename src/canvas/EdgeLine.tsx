@@ -8,13 +8,14 @@ interface Props {
   isSelected: boolean;
   invScale: number;
   onSelect: () => void;
+  readOnly?: boolean; // 只读 viewer：不响应点选，鼠标穿透以便平移
 }
 
 const INK = '#3a2c1a';
 const SEAL = '#8c3a2b';
 
 /** 节点间连线：手绘墨线 + 端点 + 中点标签（名称）。随节点移动跟随。 */
-export function EdgeLine({ edge, from, to, isSelected, invScale, onSelect }: Props) {
+export function EdgeLine({ edge, from, to, isSelected, invScale, onSelect, readOnly }: Props) {
   const mx = (from.x + to.x) / 2;
   const my = (from.y + to.y) / 2;
   // 轻微垂直偏移制造手绘弧度
@@ -25,11 +26,12 @@ export function EdgeLine({ edge, from, to, isSelected, invScale, onSelect }: Pro
   const cx = mx + (-dy / len) * bow;
   const cy = my + (dx / len) * bow;
 
-  const color = isSelected ? SEAL : INK;
+  const selected = !readOnly && isSelected;
+  const color = selected ? SEAL : INK;
   const label = edge.name || edge.edgeType;
 
   return (
-    <Group onMouseDown={onSelect} onTap={onSelect}>
+    <Group onMouseDown={onSelect} onTap={onSelect} listening={!readOnly}>
       {/* 命中区（透明粗线，便于点选）*/}
       <Line
         points={[from.x, from.y, cx, cy, to.x, to.y]}
@@ -42,9 +44,9 @@ export function EdgeLine({ edge, from, to, isSelected, invScale, onSelect }: Pro
         points={[from.x, from.y, cx, cy, to.x, to.y]}
         tension={0.5}
         stroke={color}
-        strokeWidth={(isSelected ? 2.6 : 1.9) * invScale}
+        strokeWidth={(selected ? 2.6 : 1.9) * invScale}
         lineCap="round"
-        dash={isSelected ? [8 * invScale, 5 * invScale] : undefined}
+        dash={selected ? [8 * invScale, 5 * invScale] : undefined}
       />
       <Circle x={from.x} y={from.y} radius={3.4 * invScale} fill={color} />
       <Circle x={to.x} y={to.y} radius={3.4 * invScale} fill={color} />

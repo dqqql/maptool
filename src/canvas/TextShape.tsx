@@ -12,11 +12,13 @@ interface Props {
   onChange: (patch: Partial<TextBox>) => void;
   onEdit: () => void;
   registerRef: (id: string, ref: Konva.Group | null) => void;
+  readOnly?: boolean; // 只读 viewer：禁用拖拽/编辑/选中框
 }
 
 /** 自由文本备注框：背景纸片 + 文字，可拖拽/缩放，双击进入编辑（HTML 浮层）。 */
-export function TextShape({ box, isSelected, invScale, onSelect, onChange, onEdit, registerRef }: Props) {
+export function TextShape({ box, isSelected, invScale, onSelect, onChange, onEdit, registerRef, readOnly }: Props) {
   const ref = useRef<Konva.Group>(null);
+  const selected = !readOnly && isSelected;
 
   useEffect(() => {
     registerRef(box.id, ref.current);
@@ -45,7 +47,7 @@ export function TextShape({ box, isSelected, invScale, onSelect, onChange, onEdi
       ref={ref}
       x={box.x}
       y={box.y}
-      draggable
+      draggable={!readOnly}
       onMouseDown={onSelect}
       onTap={onSelect}
       onDragStart={onSelect}
@@ -58,14 +60,14 @@ export function TextShape({ box, isSelected, invScale, onSelect, onChange, onEdi
         width={box.width}
         height={box.height}
         fill={box.background}
-        stroke={isSelected ? '#8c3a2b' : '#b39a68'}
-        strokeWidth={(isSelected ? 1.8 : 1.3) * invScale}
+        stroke={selected ? '#8c3a2b' : '#b39a68'}
+        strokeWidth={(selected ? 1.8 : 1.3) * invScale}
         cornerRadius={5}
         shadowColor="rgba(50,34,12,0.3)"
         shadowBlur={6}
         shadowOffsetY={2}
-        shadowOpacity={isSelected ? 0.5 : 0.3}
-        dash={isSelected ? [7 * invScale, 4 * invScale] : undefined}
+        shadowOpacity={selected ? 0.5 : 0.3}
+        dash={selected ? [7 * invScale, 4 * invScale] : undefined}
       />
       {box.content ? (
         <>

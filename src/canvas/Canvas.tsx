@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { forwardRef, useImperativeHandle, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Stage, Layer, Line, Circle, Group, Transformer } from 'react-konva';
 import type Konva from 'konva';
 import { useWorldStore } from '../store/worldStore';
 import { NodeShape } from './NodeShape';
 import { EdgeLine } from './EdgeLine';
 import { TextShape } from './TextShape';
+import { formatPropValue } from './formatPropValue';
 import type { MapNode } from '../types';
 
 const MIN_SCALE = 0.2;
@@ -19,14 +20,11 @@ const COLOR_AXIS = 'rgba(140, 58, 43, 0.5)';
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const center = (n: MapNode) => ({ x: n.x + n.width / 2, y: n.y + n.height / 2 });
 
-function formatPropValue(type: string, value: string | number | boolean): string {
-  if (type === 'checkbox') return value ? '是' : '否';
-  if (type === 'rating') return `${Number(value) || 0} 星`;
-  const str = String(value ?? '').trim();
-  return str || '—';
+export interface CanvasHandle {
+  getStage: () => Konva.Stage | null;
 }
 
-export function Canvas() {
+export const Canvas = forwardRef<CanvasHandle>(function Canvas(_props, ref) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<Konva.Stage>(null);
   const trRef = useRef<Konva.Transformer>(null);
@@ -47,6 +45,8 @@ export function Canvas() {
   } = s;
 
   const invScale = 1 / viewport.scale;
+
+  useImperativeHandle(ref, () => ({ getStage: () => stageRef.current }), []);
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -343,4 +343,4 @@ export function Canvas() {
       )}
     </div>
   );
-}
+});

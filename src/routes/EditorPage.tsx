@@ -1,14 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Canvas } from '../canvas/Canvas';
+import { Canvas, type CanvasHandle } from '../canvas/Canvas';
 import { LibraryPanel } from '../panels/LibraryPanel';
 import { PropertyPanel } from '../panels/PropertyPanel';
+import { ExportMenu, type ExportItem } from '../components/ExportMenu';
 import { useWorldStore, type ToolMode } from '../store/worldStore';
 import { useLibraryStore } from '../store/libraryStore';
 import { getWorld } from '../db/idb';
 import { exportWorld } from '../serialization/worldFile';
+import { exportAutoRange, exportCurrentView, downloadBlob } from '../export/exportPng';
+import { exportReadonlyHtml } from '../export/exportHtml';
 import { DEFAULT_VIEWPORT, type Asset } from '../types';
 import './EditorPage.css';
+
+const EXPORT_ITEMS: ExportItem[] = [
+  { key: 'png-auto', label: '高清图片 · 全图', tip: '按所有内容自动框定范围导出 PNG' },
+  { key: 'png-view', label: '高清图片 · 当前视图', tip: '导出当前可见画面为 PNG' },
+  { key: 'html', label: '只读网页 · 可分享', tip: '导出离线 HTML，他人可查看但不可编辑' },
+  { key: 'json', label: 'JSON 存档', tip: '导出 .world.json，可再导入恢复' },
+];
+
+const PNG_PIXEL_RATIO = 2;
 
 const TOOLS: { mode: ToolMode; label: string; tip: string }[] = [
   { mode: 'select', label: '选择', tip: '选择 / 移动 / 缩放节点（空白拖拽平移）' },
@@ -22,6 +34,7 @@ export function EditorPage() {
   const [worldName, setWorldName] = useState('');
   const [notFound, setNotFound] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const canvasRef = useRef<CanvasHandle>(null);
 
   const [floating, setFloating] = useState<Asset | null>(null);
   const [cursor, setCursor] = useState({ x: 0, y: 0 });
@@ -161,11 +174,32 @@ export function EditorPage() {
     addNode(asset.id, asset.name, worldX, worldY);
   }
 
-  async function handleExport() {
+  function safeFileBase() {
+    return (worldName || '世界').replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || '世界';
+  }
+
+  async function handleExportSelect(key: string) {
     if (!id) return;
     setExporting(true);
     try {
-      await exportWorld(id);
+      if (key === 'json') {
+        await exportWorld(id);
+        return;
+      }
+      if (key === 'html') {
+        await exportReadonlyHtml(id, `${safeFileBase()}.html`);
+        return;
+      }
+      const stage = canvasRef.current?.getStage();
+      if (!stage) throw new Error('画布尚未就绪');
+      const store = useWorldStore.getState();
+      if (key === 'png-auto') {
+        const blob = await exportAutoRange(stage, store.nodes, store.texts, { pixelRatio: PNG_PIXEL_RATIO });
+        downloadBlob(blob, `${safeFileBase()}.png`);
+      } else if (key === 'png-view') {
+        const blob = await exportCurrentView(stage, { pixelRatio: PNG_PIXEL_RATIO });
+        downloadBlob(blob, `${safeFileBase()}-视图.png`);
+      }
     } catch (err) {
       alert('导出失败：' + (err instanceof Error ? err.message : String(err)));
     } finally {
@@ -191,7 +225,7 @@ export function EditorPage() {
         <div className="canvas-col grain-overlay">
           {loaded ? (
             <>
-              <Canvas />
+              <Canvas ref={canvasRef} />
 
               <div className="canvas-toolbar">
                 {TOOLS.map((t) => (
@@ -206,9 +240,7 @@ export function EditorPage() {
                   </button>
                 ))}
                 <div className="canvas-toolbar__divider" />
-                <button className="tool tool--export" onClick={handleExport} disabled={exporting} title="导出为 JSON 存档">
-                  {exporting ? '导出中…' : '导出'}
-                </button>
+                <ExportMenu items={EXPORT_ITEMS} busy={exporting} onSelect={handleExportSelect} />
               </div>
 
               {isBlank && mode === 'select' && (

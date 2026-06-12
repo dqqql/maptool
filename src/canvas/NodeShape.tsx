@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Group, Image as KonvaImage, Rect, Text } from 'react-konva';
 import type Konva from 'konva';
-import type { MapNode } from '../types';
+import type { Asset, MapNode } from '../types';
 import { useLibraryStore } from '../store/libraryStore';
 import { useImage } from './useImage';
 
@@ -15,17 +15,20 @@ interface Props {
   onChange: (patch: Partial<MapNode>) => void;
   onHover: (hovering: boolean) => void;
   registerRef: (id: string, ref: Konva.Group | null) => void;
+  readOnly?: boolean; // 只读 viewer：禁用拖拽/选中框，仅保留 hover
+  resolveAsset?: (id: string) => Asset | undefined; // 自定义素材解析（viewer 用内嵌素材）
 }
 
 /**
  * 单个画布节点：手绘素材图 + 选中外框 + 名称标签。
  * 拖拽移动、缩放（由 Canvas 的 Transformer 接管）后回写坐标/尺寸。
  */
-export function NodeShape({ node, isSelected, invScale, draggable, connectSource, onSelect, onChange, onHover, registerRef }: Props) {
+export function NodeShape({ node, isSelected, invScale, draggable, connectSource, onSelect, onChange, onHover, registerRef, readOnly, resolveAsset }: Props) {
   const groupRef = useRef<Konva.Group>(null);
-  const getAsset = useLibraryStore((s) => s.getAsset);
-  const asset = getAsset(node.assetId);
+  const storeGetAsset = useLibraryStore((s) => s.getAsset);
+  const asset = resolveAsset ? resolveAsset(node.assetId) : storeGetAsset(node.assetId);
   const img = useImage(asset?.dataUrl ?? '');
+  const selected = !readOnly && isSelected;
 
   useEffect(() => {
     registerRef(node.id, groupRef.current);
@@ -57,7 +60,7 @@ export function NodeShape({ node, isSelected, invScale, draggable, connectSource
       x={node.x}
       y={node.y}
       rotation={node.rotation}
-      draggable={draggable}
+      draggable={!readOnly && draggable}
       onMouseDown={onSelect}
       onTap={onSelect}
       onMouseEnter={() => onHover(true)}
@@ -70,7 +73,7 @@ export function NodeShape({ node, isSelected, invScale, draggable, connectSource
       onTransformEnd={handleTransformEnd}
     >
       {/* 连线起点高亮环 */}
-      {connectSource && (
+      {!readOnly && connectSource && (
         <Rect
           x={-pad - 2}
           y={-pad - 2}
@@ -83,7 +86,7 @@ export function NodeShape({ node, isSelected, invScale, draggable, connectSource
         />
       )}
       {/* 选中底色 + 手绘外框 */}
-      {isSelected && (
+      {selected && (
         <Rect
           x={-pad}
           y={-pad}
@@ -110,8 +113,8 @@ export function NodeShape({ node, isSelected, invScale, draggable, connectSource
         align="center"
         fontFamily="'Noto Serif SC', serif"
         fontSize={labelFontSize * invScale}
-        fontStyle={isSelected ? 'bold' : 'normal'}
-        fill={isSelected ? '#8c3a2b' : '#4d3c26'}
+        fontStyle={selected ? 'bold' : 'normal'}
+        fill={selected ? '#8c3a2b' : '#4d3c26'}
         listening={false}
       />
     </Group>

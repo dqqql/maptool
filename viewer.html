@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>世界舆图 · 只读</title>
+    <meta name="description" content="世界舆图导出的只读世界图——可缩放平移查看，不可编辑" />
+    <!-- 世界数据占位符：导出时由 exportHtml.ts 注入真实 JSON。离线打开，字体走本地回退。 -->
+    <script id="world-data" type="application/json">__WORLD_DATA_PLACEHOLDER__</script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/viewer/viewer.tsx"></script>
+  </body>
+</html>

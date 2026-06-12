@@ -18,8 +18,8 @@ export interface WorldFile {
   assets: Asset[]; // 用到的用户素材（内置不导出）
 }
 
-/** 导出某世界为 JSON 并触发下载 */
-export async function exportWorld(worldId: string): Promise<void> {
+/** 收集某世界的完整 WorldFile（含用户素材内嵌），不触发下载。供 JSON 导出与只读 HTML 导出共用。 */
+export async function buildWorldFile(worldId: string): Promise<WorldFile> {
   const world = await getWorld(worldId);
   if (!world) throw new Error('世界不存在');
   const data = await getWorldData(worldId);
@@ -29,7 +29,7 @@ export async function exportWorld(worldId: string): Promise<void> {
   const allAssets = await listAssets();
   const assets = allAssets.filter((a) => !a.builtin && usedAssetIds.has(a.id));
 
-  const file: WorldFile = {
+  return {
     format: WORLD_FILE_FORMAT,
     version: WORLD_FILE_VERSION,
     exportedAt: Date.now(),
@@ -37,12 +37,16 @@ export async function exportWorld(worldId: string): Promise<void> {
     data: { nodes: data.nodes, edges: data.edges, texts: data.texts, viewport: data.viewport },
     assets,
   };
+}
 
+/** 导出某世界为 JSON 并触发下载 */
+export async function exportWorld(worldId: string): Promise<void> {
+  const file = await buildWorldFile(worldId);
   const blob = new Blob([JSON.stringify(file, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  const safe = world.name.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || '世界';
+  const safe = file.world.name.replace(/[\\/:*?"<>|]/g, '_').slice(0, 40) || '世界';
   a.download = `${safe}.world.json`;
   document.body.appendChild(a);
   a.click();

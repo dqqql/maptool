@@ -29,9 +29,11 @@ pnpm-debug.log*
 # TS 增量构建信息
 *.tsbuildinfo
 
-# tsc -b 对 vite.config.ts 的 emit 产物
+# tsc -b 对 vite 配置的 emit 产物
 vite.config.js
 vite.config.d.ts
+vite.viewer.config.js
+vite.viewer.config.d.ts
 
 # 本地 skill / agent 缓存（非应用代码）
 .claude/
