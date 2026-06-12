@@ -4,12 +4,17 @@
    ========================================================================= */
 import { create } from 'zustand';
 import type { Viewport, WorldData, MapNode, Edge, TextBox, CustomProp } from '../types';
-import { DEFAULT_VIEWPORT } from '../types';
+import { DEFAULT_TEXT_COLOR, DEFAULT_VIEWPORT } from '../types';
 import { getWorldData, putWorldData, touchWorld } from '../db/idb';
 import { textBoxHeight } from '../canvas/textMarkdown';
 
 const NODE_DEFAULT_SIZE = 92;
-const TEXT_DEFAULT = { width: 200, background: 'rgba(255,250,235,0.85)', fontSize: 16 };
+const TEXT_DEFAULT = {
+  width: 200,
+  background: 'rgba(255,250,235,0.85)',
+  fontSize: 16,
+  color: DEFAULT_TEXT_COLOR,
+};
 
 export type ToolMode = 'select' | 'connect' | 'text';
 
@@ -126,6 +131,7 @@ export const useWorldStore = create<WorldState>((set, get) => {
         edges: data.edges ?? [],
         texts: (data.texts ?? []).map((text) => ({
           ...text,
+          color: text.color ?? DEFAULT_TEXT_COLOR,
           height: textBoxHeight(text.content, text.width, text.fontSize),
         })),
       });
@@ -291,6 +297,7 @@ export const useWorldStore = create<WorldState>((set, get) => {
         height,
         background: TEXT_DEFAULT.background,
         fontSize: TEXT_DEFAULT.fontSize,
+        color: TEXT_DEFAULT.color,
       };
       mutate((s) => ({ texts: [...s.texts, box], ...CLEARED, selectedTextId: id }));
       return id;

@@ -304,6 +304,7 @@ export const Canvas = forwardRef<CanvasHandle>(function Canvas(_props, ref) {
             height: editingBox.height * viewport.scale,
             fontSize: editingBox.fontSize * viewport.scale,
             background: editingBox.background,
+            color: editingBox.color,
           }}
           onChange={(e) => updateText(editingBox.id, { content: e.target.value })}
           onBlur={() => setEditingTextId(null)}

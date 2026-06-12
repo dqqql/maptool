@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { Group, Line, Rect, Text } from 'react-konva';
 import type Konva from 'konva';
-import type { TextBox } from '../types';
+import { DEFAULT_TEXT_COLOR, type TextBox } from '../types';
 import { layoutMarkdown, TEXT_MIN_WIDTH, textBoxHeight } from './textMarkdown';
 
 interface Props {
@@ -19,6 +19,7 @@ interface Props {
 export function TextShape({ box, isSelected, invScale, onSelect, onChange, onEdit, registerRef, readOnly }: Props) {
   const ref = useRef<Konva.Group>(null);
   const selected = !readOnly && isSelected;
+  const textColor = box.color ?? DEFAULT_TEXT_COLOR;
 
   useEffect(() => {
     registerRef(box.id, ref.current);
@@ -94,7 +95,7 @@ export function TextShape({ box, isSelected, invScale, onSelect, onChange, onEdi
                   fontFamily="'Noto Serif SC', serif"
                   fontSize={row.fontSize}
                   lineHeight={1.45}
-                  fill="#241a10"
+                  fill={textColor}
                   listening={false}
                 />
               );
@@ -110,7 +111,7 @@ export function TextShape({ box, isSelected, invScale, onSelect, onChange, onEdi
                   fontSize={row.fontSize}
                   fontStyle={segment.bold ? 'bold' : 'normal'}
                   lineHeight={1.45}
-                  fill="#241a10"
+                  fill={textColor}
                   listening={false}
                 />
               );

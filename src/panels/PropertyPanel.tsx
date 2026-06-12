@@ -22,6 +22,14 @@ const TEXT_BG = [
   { label: '透明', value: 'transparent' },
 ];
 
+const TEXT_COLORS = [
+  { label: '墨色', value: '#241a10' },
+  { label: '朱砂', value: '#8c3a2b' },
+  { label: '松绿', value: '#355b48' },
+  { label: '靛青', value: '#315c78' },
+  { label: '黛紫', value: '#6b426f' },
+];
+
 function defaultValue(type: CustomPropType, options: string[]): CustomProp['value'] {
   switch (type) {
     case 'checkbox': return false;
@@ -131,6 +139,24 @@ export function PropertyPanel() {
             <label className="prop-label">字号 · {text.fontSize} 像素</label>
             <input type="range" min={12} max={40} value={text.fontSize} className="prop-range"
               onChange={(e) => updateText(text.id, { fontSize: Number(e.target.value) })} />
+          </div>
+          <div className="prop-field">
+            <label className="prop-label">文字颜色</label>
+            <div className="prop-color-row">
+              <div className="prop-swatches">
+                {TEXT_COLORS.map((color) => (
+                  <button key={color.value} title={color.label} aria-label={color.label}
+                    className={`prop-swatch prop-swatch--text ${text.color === color.value ? 'is-on' : ''}`}
+                    style={{ background: color.value }}
+                    onClick={() => updateText(text.id, { color: color.value })} />
+                ))}
+              </div>
+              <label className="prop-color-custom" title="自定义颜色">
+                <input type="color" value={text.color}
+                  aria-label="自定义文字颜色"
+                  onChange={(e) => updateText(text.id, { color: e.target.value })} />
+              </label>
+            </div>
           </div>
           <div className="prop-field">
             <label className="prop-label">背景</label>

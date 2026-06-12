@@ -172,6 +172,11 @@
   display: flex;
   gap: 8px;
 }
+.prop-color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
 .prop-swatch {
   width: 34px;
   height: 26px;
@@ -190,6 +195,42 @@
   background:
     linear-gradient(45deg, var(--line) 25%, transparent 25%, transparent 75%, var(--line) 75%) 0 0 / 10px 10px,
     var(--paper-0);
+}
+.prop-swatch--text {
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+}
+.prop-color-custom {
+  position: relative;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border: 1.6px solid var(--line-strong);
+  border-radius: 50%;
+  overflow: hidden;
+  cursor: pointer;
+  background: conic-gradient(#8c3a2b, #b19032, #355b48, #315c78, #6b426f, #8c3a2b);
+}
+.prop-color-custom::after {
+  content: '+';
+  position: absolute;
+  inset: 4px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--paper-0);
+  background: rgba(36, 26, 16, 0.7);
+  font: 700 13px/1 var(--font-serif);
+  pointer-events: none;
+}
+.prop-color-custom input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 .prop-field {
   margin-bottom: 18px;

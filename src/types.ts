@@ -62,7 +62,10 @@ export interface TextBox {
   height: number;
   background: string;
   fontSize: number;
+  color: string;
 }
+
+export const DEFAULT_TEXT_COLOR = '#241a10';
 
 /** 素材（内置占位 SVG 或用户上传图片）*/
 export interface Asset {

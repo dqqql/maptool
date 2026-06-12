@@ -1,7 +1,7 @@
 /* =========================================================================
    世界存档：导出 / 导入为单个 JSON（用户素材以 base64/dataUrl 内嵌）
    ========================================================================= */
-import type { World, WorldData, Asset } from '../types';
+import { DEFAULT_TEXT_COLOR, type World, type WorldData, type Asset } from '../types';
 import {
   getWorld, getWorldData, listAssets, putAsset, createWorld, putWorldData,
 } from '../db/idb';
@@ -82,7 +82,10 @@ export async function importWorldFromText(text: string): Promise<World> {
     worldId: world.id,
     nodes: file.data.nodes ?? [],
     edges: file.data.edges ?? [],
-    texts: file.data.texts ?? [],
+    texts: (file.data.texts ?? []).map((text) => ({
+      ...text,
+      color: text.color ?? DEFAULT_TEXT_COLOR,
+    })),
     viewport: file.data.viewport ?? { x: 0, y: 0, scale: 1 },
   };
   await putWorldData(data);
