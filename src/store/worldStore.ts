@@ -6,11 +6,10 @@ import { create } from 'zustand';
 import type { Viewport, WorldData, MapNode, Edge, TextBox, CustomProp } from '../types';
 import { DEFAULT_TEXT_COLOR, DEFAULT_VIEWPORT } from '../types';
 import { getWorldData, putWorldData, touchWorld } from '../db/idb';
-import { textBoxHeight } from '../canvas/textMarkdown';
+import { textBoxSize } from '../canvas/textMarkdown';
 
 const NODE_DEFAULT_SIZE = 92;
 const TEXT_DEFAULT = {
-  width: 200,
   background: 'rgba(255,250,235,0.85)',
   fontSize: 16,
   color: DEFAULT_TEXT_COLOR,
@@ -129,11 +128,14 @@ export const useWorldStore = create<WorldState>((set, get) => {
         viewport: data.viewport ?? { ...DEFAULT_VIEWPORT },
         nodes: data.nodes ?? [],
         edges: data.edges ?? [],
-        texts: (data.texts ?? []).map((text) => ({
-          ...text,
-          color: text.color ?? DEFAULT_TEXT_COLOR,
-          height: textBoxHeight(text.content, text.width, text.fontSize),
-        })),
+        texts: (data.texts ?? []).map((text) => {
+          const size = textBoxSize(text.content, text.fontSize);
+          return {
+            ...text,
+            ...size,
+            color: text.color ?? DEFAULT_TEXT_COLOR,
+          };
+        }),
       });
     },
 
@@ -287,14 +289,13 @@ export const useWorldStore = create<WorldState>((set, get) => {
 
     addText(x, y) {
       const id = crypto.randomUUID();
-      const height = textBoxHeight('', TEXT_DEFAULT.width, TEXT_DEFAULT.fontSize);
+      const size = textBoxSize('', TEXT_DEFAULT.fontSize);
       const box: TextBox = {
         id,
         content: '',
-        x: x - TEXT_DEFAULT.width / 2,
-        y: y - height / 2,
-        width: TEXT_DEFAULT.width,
-        height,
+        x: x - size.width / 2,
+        y: y - size.height / 2,
+        ...size,
         background: TEXT_DEFAULT.background,
         fontSize: TEXT_DEFAULT.fontSize,
         color: TEXT_DEFAULT.color,
@@ -307,8 +308,8 @@ export const useWorldStore = create<WorldState>((set, get) => {
         texts: s.texts.map((text) => {
           if (text.id !== id) return text;
           const next = { ...text, ...patch };
-          if ('content' in patch || 'width' in patch || 'fontSize' in patch) {
-            next.height = textBoxHeight(next.content, next.width, next.fontSize);
+          if ('content' in patch || 'fontSize' in patch) {
+            Object.assign(next, textBoxSize(next.content, next.fontSize));
           }
           return next;
         }),

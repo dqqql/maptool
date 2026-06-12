@@ -160,13 +160,6 @@
   font-size: 18px;
 }
 
-/* 字号滑块 */
-.prop-range {
-  width: 100%;
-  accent-color: var(--seal);
-  cursor: pointer;
-}
-
 /* 背景色板 */
 .prop-swatches {
   display: flex;

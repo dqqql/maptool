@@ -140,7 +140,8 @@ export const Canvas = forwardRef<CanvasHandle>(function Canvas(_props, ref) {
         const p = stageRef.current!.getPointerPosition()!;
         const wx = (p.x - viewport.x) / viewport.scale;
         const wy = (p.y - viewport.y) / viewport.scale;
-        addText(wx, wy);
+        const id = addText(wx, wy);
+        setEditingTextId(id);
       }
       return;
     }
@@ -276,7 +277,11 @@ export const Canvas = forwardRef<CanvasHandle>(function Canvas(_props, ref) {
             <Transformer
               ref={trRef}
               rotateEnabled={!selectedTextId}
-              enabledAnchors={selectedTextId ? ['middle-left', 'middle-right'] : undefined}
+              keepRatio={Boolean(selectedTextId)}
+              flipEnabled={!selectedTextId}
+              enabledAnchors={selectedTextId
+                ? ['top-left', 'top-right', 'bottom-left', 'bottom-right']
+                : undefined}
               rotationSnaps={[0, 45, 90, 135, 180, 225, 270, 315]}
               anchorSize={9}
               anchorCornerRadius={5}

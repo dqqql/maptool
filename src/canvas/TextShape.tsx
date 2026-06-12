@@ -2,7 +2,10 @@ import { useRef, useEffect } from 'react';
 import { Group, Line, Rect, Text } from 'react-konva';
 import type Konva from 'konva';
 import { DEFAULT_TEXT_COLOR, type TextBox } from '../types';
-import { layoutMarkdown, TEXT_MIN_WIDTH, textBoxHeight } from './textMarkdown';
+import { layoutMarkdown, textBoxSize } from './textMarkdown';
+
+const MIN_TEXT_FONT_SIZE = 8;
+const MAX_TEXT_FONT_SIZE = 160;
 
 interface Props {
   box: TextBox;
@@ -29,15 +32,19 @@ export function TextShape({ box, isSelected, invScale, onSelect, onChange, onEdi
   function handleTransformEnd() {
     const g = ref.current;
     if (!g) return;
-    const sx = g.scaleX();
+    const scale = Math.max(0.01, (Math.abs(g.scaleX()) + Math.abs(g.scaleY())) / 2);
+    const fontSize = Math.min(
+      MAX_TEXT_FONT_SIZE,
+      Math.max(MIN_TEXT_FONT_SIZE, Math.round(box.fontSize * scale)),
+    );
     g.scaleX(1);
     g.scaleY(1);
-    const width = Math.max(TEXT_MIN_WIDTH, box.width * sx);
+    const size = textBoxSize(box.content, fontSize);
     onChange({
       x: g.x(),
       y: g.y(),
-      width,
-      height: textBoxHeight(box.content, width, box.fontSize),
+      fontSize,
+      ...size,
     });
   }
 

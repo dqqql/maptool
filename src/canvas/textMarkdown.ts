@@ -1,7 +1,7 @@
 export const TEXT_PADDING_X = 10;
 export const TEXT_PADDING_Y = 9;
 export const TEXT_LINE_HEIGHT = 1.45;
-export const TEXT_MIN_WIDTH = 80;
+export const TEXT_EMPTY_WIDTH = 200;
 
 export interface MarkdownSegment {
   text: string;
@@ -59,6 +59,16 @@ function measure(text: string, fontSize: number, bold: boolean): number {
   const ctx = context();
   ctx.font = `${bold ? '700' : '400'} ${fontSize}px "Noto Serif SC", serif`;
   return ctx.measureText(text).width;
+}
+
+function parsedLineWidth(parsed: ParsedLine): number {
+  const contentWidth = parseInline(parsed.text, parsed.forceBold)
+    .reduce(
+      (width, run) => width + Array.from(run.text)
+        .reduce((runWidth, char) => runWidth + measure(char, parsed.fontSize, run.bold), 0),
+      0,
+    );
+  return parsed.indent + contentWidth;
 }
 
 function parseInline(text: string, forceBold: boolean): InlineRun[] {
@@ -199,4 +209,28 @@ export function layoutMarkdown(content: string, boxWidth: number, baseFontSize: 
 
 export function textBoxHeight(content: string, width: number, fontSize: number): number {
   return layoutMarkdown(content, width, fontSize).height;
+}
+
+/** 按最长逻辑行和显式换行计算文本框的自然尺寸，不保留手工拉出的空白。 */
+export function textBoxSize(content: string, fontSize: number): { width: number; height: number } {
+  if (!content) {
+    return {
+      width: TEXT_EMPTY_WIDTH,
+      height: textBoxHeight('', TEXT_EMPTY_WIDTH, fontSize),
+    };
+  }
+
+  const contentWidth = Math.max(
+    0,
+    ...content.split('\n').map((line) => parsedLineWidth(parseLine(line, fontSize))),
+  );
+  // 多留 1px 避免字体测量的小数误差让末字意外换行。
+  const width = Math.max(
+    TEXT_PADDING_X * 2 + 1,
+    Math.ceil(contentWidth + TEXT_PADDING_X * 2 + 1),
+  );
+  return {
+    width,
+    height: textBoxHeight(content, width, fontSize),
+  };
 }
