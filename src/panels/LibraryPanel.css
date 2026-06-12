@@ -175,6 +175,30 @@
 /* 用户素材：上传、重命名、删除 */
 .lib__item-wrap {
   position: relative;
+  min-width: 0;
+}
+.lib__grid--user {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lib__grid--user .lib__item-wrap,
+.lib__grid--user .lib__item {
+  width: 100%;
+}
+.lib__grid--user .lib__item {
+  padding: 8px 8px 7px;
+}
+.lib__grid--user .lib__thumb {
+  aspect-ratio: auto;
+  min-height: 72px;
+  padding: 6px;
+}
+.lib__grid--user .lib__thumb img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  max-height: 180px;
 }
 .lib__item-tools {
   position: absolute;

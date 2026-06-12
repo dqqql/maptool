@@ -196,7 +196,7 @@ export function LibraryPanel({ onPlace, onFloatPlace }: Props) {
             {user.length === 0 ? (
               <p className="lib__empty">上传 PNG / JPG / WEBP / SVG，化作你自己的图记。</p>
             ) : (
-              <div className="lib__grid">{user.map(userThumb)}</div>
+              <div className="lib__grid lib__grid--user">{user.map(userThumb)}</div>
             )}
           </>
         )}
