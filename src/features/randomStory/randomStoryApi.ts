@@ -22,11 +22,19 @@ export async function generateRandomStories(
     body: JSON.stringify(request),
   });
 
+  const contentType = response.headers.get('Content-Type') ?? '';
+  const responseText = await response.text();
   let payload: unknown;
   try {
-    payload = await response.json();
+    payload = JSON.parse(responseText);
   } catch {
-    throw new RandomStoryApiError(response.status || 502, '服务返回了无法读取的响应');
+    const localHint = contentType.includes('text/html')
+      ? '。本地开发请停止旧进程并重新运行 npm run dev'
+      : '';
+    throw new RandomStoryApiError(
+      response.status || 502,
+      `服务返回了非 JSON 响应${localHint}`,
+    );
   }
 
   if (!response.ok) {

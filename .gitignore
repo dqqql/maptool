@@ -38,6 +38,7 @@ vite.viewer.config.d.ts
 # 本地 skill / agent 缓存（非应用代码）
 .claude/
 .agents/
+.wrangler/
 skills-lock.json
 AGENTS.md
 
