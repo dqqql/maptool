@@ -44,6 +44,7 @@ export function TextShape({ box, isSelected, invScale, onSelect, onChange, onEdi
       x: g.x(),
       y: g.y(),
       fontSize,
+      autoSize: true,
       ...size,
     });
   }

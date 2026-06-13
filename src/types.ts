@@ -64,6 +64,32 @@ export interface TextBox {
   background: string;
   fontSize: number;
   color: string;
+  /** false 时保留固定宽度，仅根据内容重新计算高度。旧数据缺省为自动宽度。 */
+  autoSize?: boolean;
+}
+
+export type StoryLength = 'short' | 'medium' | 'long';
+
+export interface GeneratedEncounter {
+  type: string;
+  title: string;
+  hook: string;
+  scene: string;
+  developments: string[];
+  cluesOrInteractions: string[];
+  resolutions: string[];
+}
+
+export interface RandomStoryRequest {
+  context: string;
+  note: string;
+  count: number;
+  types: string[];
+  length: StoryLength;
+}
+
+export interface RandomStoryResponse {
+  encounters: GeneratedEncounter[];
 }
 
 export const DEFAULT_TEXT_COLOR = '#241a10';

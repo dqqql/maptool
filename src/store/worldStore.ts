@@ -6,7 +6,7 @@ import { create } from 'zustand';
 import type { Viewport, WorldData, MapNode, Edge, TextBox, CustomProp } from '../types';
 import { DEFAULT_TEXT_COLOR, DEFAULT_VIEWPORT } from '../types';
 import { getWorldData, putWorldData, touchWorld } from '../db/idb';
-import { textBoxSize } from '../canvas/textMarkdown';
+import { textBoxHeight, textBoxSize } from '../canvas/textMarkdown';
 
 const NODE_DEFAULT_SIZE = 92;
 const TEXT_DEFAULT = {
@@ -64,6 +64,7 @@ interface WorldState {
 
   // 文本框
   addText: (x: number, y: number) => string;
+  addGeneratedTexts: (contents: string[], x: number, y: number, width: number, gap: number) => TextBox[];
   updateText: (id: string, patch: Partial<TextBox>) => void;
   removeText: (id: string) => void;
 
@@ -129,7 +130,9 @@ export const useWorldStore = create<WorldState>((set, get) => {
         nodes: data.nodes ?? [],
         edges: data.edges ?? [],
         texts: (data.texts ?? []).map((text) => {
-          const size = textBoxSize(text.content, text.fontSize);
+          const size = text.autoSize === false
+            ? { width: text.width, height: textBoxHeight(text.content, text.width, text.fontSize) }
+            : textBoxSize(text.content, text.fontSize);
           return {
             ...text,
             ...size,
@@ -300,9 +303,32 @@ export const useWorldStore = create<WorldState>((set, get) => {
         background: TEXT_DEFAULT.background,
         fontSize: TEXT_DEFAULT.fontSize,
         color: TEXT_DEFAULT.color,
+        autoSize: true,
       };
       mutate((s) => ({ texts: [...s.texts, box], ...CLEARED, selectedTextId: id }));
       return id;
+    },
+    addGeneratedTexts(contents, x, y, width, gap) {
+      let nextY = y;
+      const boxes = contents.map((content) => {
+        const height = textBoxHeight(content, width, TEXT_DEFAULT.fontSize);
+        const box: TextBox = {
+          id: crypto.randomUUID(),
+          content,
+          x,
+          y: nextY,
+          width,
+          height,
+          background: TEXT_DEFAULT.background,
+          fontSize: TEXT_DEFAULT.fontSize,
+          color: TEXT_DEFAULT.color,
+          autoSize: false,
+        };
+        nextY += height + gap;
+        return box;
+      });
+      mutate((s) => ({ texts: [...s.texts, ...boxes] }));
+      return boxes;
     },
     updateText(id, patch) {
       mutate((s) => ({
@@ -310,7 +336,10 @@ export const useWorldStore = create<WorldState>((set, get) => {
           if (text.id !== id) return text;
           const next = { ...text, ...patch };
           if ('content' in patch || 'fontSize' in patch) {
-            Object.assign(next, textBoxSize(next.content, next.fontSize));
+            const size = next.autoSize === false
+              ? { width: next.width, height: textBoxHeight(next.content, next.width, next.fontSize) }
+              : textBoxSize(next.content, next.fontSize);
+            Object.assign(next, size);
           }
           return next;
         }),

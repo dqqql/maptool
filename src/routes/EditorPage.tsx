@@ -10,7 +10,13 @@ import { getWorld } from '../db/idb';
 import { exportWorld } from '../serialization/worldFile';
 import { exportAutoRange, exportCurrentView, downloadBlob } from '../export/exportPng';
 import { exportReadonlyHtml } from '../export/exportHtml';
-import { DEFAULT_VIEWPORT, type Asset } from '../types';
+import { DEFAULT_VIEWPORT, type Asset, type GeneratedEncounter, type TextBox } from '../types';
+import { RandomStoryDialog } from '../features/randomStory/RandomStoryDialog';
+import {
+  encounterToMarkdown,
+  selectedContentBounds,
+} from '../features/randomStory/randomStorySelection';
+import { useRandomStoryStore } from '../features/randomStory/randomStoryStore';
 import './EditorPage.css';
 
 const EXPORT_ITEMS: ExportItem[] = [
@@ -21,6 +27,9 @@ const EXPORT_ITEMS: ExportItem[] = [
 ];
 
 const PNG_PIXEL_RATIO = 2;
+const STORY_TEXT_WIDTH = 420;
+const STORY_TEXT_GAP = 28;
+const STORY_PLACEMENT_GAP = 120;
 
 const TOOLS: { mode: ToolMode; label: string; tip: string }[] = [
   { mode: 'select', label: '选择', tip: '选择 / 移动 / 缩放节点（空白拖拽平移）' },
@@ -34,6 +43,7 @@ export function EditorPage() {
   const [worldName, setWorldName] = useState('');
   const [notFound, setNotFound] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [randomStoryOpen, setRandomStoryOpen] = useState(false);
   const canvasRef = useRef<CanvasHandle>(null);
 
   const [floating, setFloating] = useState<Asset | null>(null);
@@ -43,6 +53,7 @@ export function EditorPage() {
   const viewport = useWorldStore((s) => s.viewport);
   const nodes = useWorldStore((s) => s.nodes);
   const texts = useWorldStore((s) => s.texts);
+  const edges = useWorldStore((s) => s.edges);
   const mode = useWorldStore((s) => s.mode);
   const connectFrom = useWorldStore((s) => s.connectFrom);
   const hasSelection = useWorldStore((s) => !!(s.selectedNodeId || s.selectedEdgeId || s.selectedTextId));
@@ -51,6 +62,7 @@ export function EditorPage() {
   const setViewport = useWorldStore((s) => s.setViewport);
   const setMode = useWorldStore((s) => s.setMode);
   const addNode = useWorldStore((s) => s.addNode);
+  const addGeneratedTexts = useWorldStore((s) => s.addGeneratedTexts);
 
   const loadLibrary = useLibraryStore((s) => s.load);
 
@@ -207,6 +219,46 @@ export function EditorPage() {
     }
   }
 
+  function fitGeneratedTexts(boxes: TextBox[]) {
+    const col = document.querySelector('.canvas-col') as HTMLElement | null;
+    if (!col || boxes.length === 0) return;
+    const minX = Math.min(...boxes.map((box) => box.x));
+    const minY = Math.min(...boxes.map((box) => box.y));
+    const maxX = Math.max(...boxes.map((box) => box.x + box.width));
+    const maxY = Math.max(...boxes.map((box) => box.y + box.height));
+    const width = maxX - minX;
+    const height = maxY - minY;
+    const padding = 56;
+    const scale = Math.max(
+      0.2,
+      Math.min(1.2, (col.clientWidth - padding * 2) / width, (col.clientHeight - padding * 2) / height),
+    );
+    setViewport({
+      scale,
+      x: col.clientWidth / 2 - (minX + width / 2) * scale,
+      y: col.clientHeight / 2 - (minY + height / 2) * scale,
+    });
+  }
+
+  function handleStoriesGenerated(encounters: GeneratedEncounter[]) {
+    const selection = useRandomStoryStore.getState();
+    const bounds = selectedContentBounds(nodes, edges, texts, selection);
+    const col = document.querySelector('.canvas-col') as HTMLElement | null;
+    const centerX = ((col?.clientWidth ?? 800) / 2 - viewport.x) / viewport.scale;
+    const centerY = ((col?.clientHeight ?? 600) / 2 - viewport.y) / viewport.scale;
+    const x = bounds ? bounds.x + bounds.width + STORY_PLACEMENT_GAP : centerX - STORY_TEXT_WIDTH / 2;
+    const y = bounds ? bounds.y : centerY - 100;
+    const boxes = addGeneratedTexts(
+      encounters.map(encounterToMarkdown),
+      x,
+      y,
+      STORY_TEXT_WIDTH,
+      STORY_TEXT_GAP,
+    );
+    fitGeneratedTexts(boxes);
+    alert(`已生成${encounters.length}份随机故事并放置到地图`);
+  }
+
   const zoomPct = Math.round(viewport.scale * 100);
   const isBlank = nodes.length === 0 && texts.length === 0;
 
@@ -240,6 +292,13 @@ export function EditorPage() {
                   </button>
                 ))}
                 <div className="canvas-toolbar__divider" />
+                <button
+                  className="tool"
+                  title="根据地图内容生成随机故事"
+                  onClick={() => setRandomStoryOpen(true)}
+                >
+                  随机故事
+                </button>
                 <ExportMenu items={EXPORT_ITEMS} busy={exporting} onSelect={handleExportSelect} />
               </div>
 
@@ -293,6 +352,15 @@ export function EditorPage() {
           style={{ left: cursor.x, top: cursor.y }}
         />
       )}
+
+      <RandomStoryDialog
+        open={randomStoryOpen}
+        nodes={nodes}
+        edges={edges}
+        texts={texts}
+        onClose={() => setRandomStoryOpen(false)}
+        onGenerated={handleStoriesGenerated}
+      />
     </div>
   );
 }
