@@ -155,7 +155,10 @@ function buildMessages(input: RandomStoryRequest, retry: boolean) {
     {
       role: 'system',
       content:
-        '你是 TRPG 游戏主持人的遭遇设计助手。请根据地图上下文生成可直接使用的随机故事。'
+        '你是富有想象力的 TRPG 游戏主持人遭遇设计助手。请生成可直接使用、具有意外感的随机故事。'
+        + '用户选中的地图内容只是灵感种子和氛围参考，不是必须逐项复述或严格围绕的事实。'
+        + '可以合理发散，引入地图上尚未出现的地点、人物、组织、传闻、历史与远方事件，'
+        + '只需让结果仍能自然接入当前世界。多份故事应尽量采用不同的主题、冲突和转折。'
         + '输出必须是严格 JSON，并完全符合给定结构。不要复述 API Key，也不要输出推理过程。',
     },
     {
@@ -165,7 +168,8 @@ function buildMessages(input: RandomStoryRequest, retry: boolean) {
         + `允许类型：${input.types.join('、')}。\n`
         + `${typeDistribution}\n`
         + `${lengthInstruction(input.length)}\n`
-        + `地图上下文：\n${input.context || '无'}\n`
+        + '以下地图上下文仅供提取少量灵感，不要求覆盖全部内容，也不要机械复述：\n'
+        + `${input.context || '无'}\n`
         + `补充备注：\n${input.note || '无'}\n`
         + `JSON 结构示例：${JSON.stringify(schema)}`
         + correction,

@@ -74,6 +74,9 @@ describe('random stories Pages Function', () => {
         response_format: { type: 'json_object' },
         stream: false,
       });
+      expect(payload.messages[0].content).toContain('只是灵感种子和氛围参考');
+      expect(payload.messages[0].content).toContain('引入地图上尚未出现的地点、人物、组织');
+      expect(payload.messages[1].content).toContain('不要求覆盖全部内容，也不要机械复述');
       return deepSeekResponse(JSON.stringify({ encounters: [encounter] }));
     });
 

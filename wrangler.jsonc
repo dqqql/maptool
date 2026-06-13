@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "trpg-maptool",
+  "name": "trpgmap",
   "pages_build_output_dir": "./dist",
   "compatibility_date": "2026-06-13",
   "compatibility_flags": ["nodejs_compat"],
