@@ -1,8 +1,9 @@
-import type {
-  GeneratedEncounter,
-  RandomStoryRequest,
-  RandomStoryResponse,
-  StoryLength,
+import {
+  DEFAULT_STORY_SYSTEM_PROMPT,
+  type GeneratedEncounter,
+  type RandomStoryRequest,
+  type RandomStoryResponse,
+  type StoryLength,
 } from '../../src/types';
 
 const DEEPSEEK_ENDPOINT = 'https://api.deepseek.com/chat/completions';
@@ -10,6 +11,7 @@ const MODEL = 'deepseek-v4-flash';
 const MAX_BODY_BYTES = 64 * 1024;
 const MAX_CONTEXT_LENGTH = 20_000;
 const MAX_NOTE_LENGTH = 5_000;
+const MAX_PROMPT_LENGTH = 8_000;
 const MAX_FIELD_LENGTH = 2_000;
 const MAX_LIST_ITEMS = 12;
 const DEFAULT_TIMEOUT_MS = 60_000;
@@ -100,9 +102,9 @@ export function validateRandomStoryRequest(value: unknown): RandomStoryRequest {
   const note = requireString(value.note, '备注', MAX_NOTE_LENGTH);
   if (!context && !note) throw new RequestError(400, '地图选择或备注至少需要一项');
 
-  const count = value.count;
-  if (!Number.isInteger(count) || typeof count !== 'number' || count < 1 || count > 6) {
-    throw new RequestError(400, '生成数量必须是 1 到 6 的整数');
+  const groups = value.groups;
+  if (!Number.isInteger(groups) || typeof groups !== 'number' || groups < 1 || groups > 3) {
+    throw new RequestError(400, '生成组数必须是 1 到 3 的整数');
   }
 
   if (!Array.isArray(value.types) || value.types.length < 1 || value.types.length > 6) {
@@ -117,13 +119,20 @@ export function validateRandomStoryRequest(value: unknown): RandomStoryRequest {
     throw new RequestError(400, '故事长度无效');
   }
 
-  return {
+  const request: RandomStoryRequest = {
     context,
     note,
-    count,
+    groups,
     types,
     length: value.length as StoryLength,
   };
+
+  // 提供该字段（即使为空串）即视为覆盖内置提示词；空串相当于删除提示词。
+  if (value.systemPrompt !== undefined) {
+    request.systemPrompt = requireString(value.systemPrompt, '系统提示词', MAX_PROMPT_LENGTH);
+  }
+
+  return request;
 }
 
 function lengthInstruction(length: StoryLength): string {
@@ -147,34 +156,32 @@ function buildMessages(input: RandomStoryRequest, retry: boolean) {
   const correction = retry
     ? '\n上一次输出未通过校验。请只返回满足数量和字段要求的 JSON 对象，不要添加解释或 Markdown。'
     : '';
-  const typeDistribution = input.count === input.types.length
-    ? `必须让 ${input.types.join('、')} 每种类型恰好出现一份。`
-    : '请在允许类型中尽量均匀分配。';
+  const total = input.groups * input.types.length;
+  const typesText = input.types.join('、');
+  const groupInstruction = input.groups > 1
+    ? `请生成 ${input.groups} 组随机故事，每组都包含 ${typesText} 各一份，共 ${total} 份。`
+      + '不同组之间即使类型相同，也必须是主题、冲突和转折完全不同的故事。'
+    : `请生成 1 组随机故事，包含 ${typesText} 各一份，共 ${total} 份。`;
 
-  return [
-    {
-      role: 'system',
-      content:
-        '你是富有想象力的 TRPG 游戏主持人遭遇设计助手。请生成可直接使用、具有意外感的随机故事。'
-        + '用户选中的地图内容只是灵感种子和氛围参考，不是必须逐项复述或严格围绕的事实。'
-        + '可以合理发散，引入地图上尚未出现的地点、人物、组织、传闻、历史与远方事件，'
-        + '只需让结果仍能自然接入当前世界。多份故事应尽量采用不同的主题、冲突和转折。'
-        + '输出必须是严格 JSON，并完全符合给定结构。不要复述 API Key，也不要输出推理过程。',
-    },
-    {
-      role: 'user',
-      content:
-        `请生成 ${input.count} 份随机故事。\n`
-        + `允许类型：${input.types.join('、')}。\n`
-        + `${typeDistribution}\n`
-        + `${lengthInstruction(input.length)}\n`
-        + '以下地图上下文仅供提取少量灵感，不要求覆盖全部内容，也不要机械复述：\n'
-        + `${input.context || '无'}\n`
-        + `补充备注：\n${input.note || '无'}\n`
-        + `JSON 结构示例：${JSON.stringify(schema)}`
-        + correction,
-    },
-  ];
+  const systemContent = input.systemPrompt ?? DEFAULT_STORY_SYSTEM_PROMPT;
+
+  const messages: Array<{ role: 'system' | 'user'; content: string }> = [];
+  // 用户可将系统提示词替换为空串以删除它，此时不发送 system 消息。
+  if (systemContent) {
+    messages.push({ role: 'system', content: systemContent });
+  }
+  messages.push({
+    role: 'user',
+    content:
+      `${groupInstruction}\n`
+      + `${lengthInstruction(input.length)}\n`
+      + '以下地图上下文仅供提取少量灵感，不要求覆盖全部内容，也不要机械复述：\n'
+      + `${input.context || '无'}\n`
+      + `补充备注：\n${input.note || '无'}\n`
+      + `JSON 结构示例：${JSON.stringify(schema)}`
+      + correction,
+  });
+  return messages;
 }
 
 function requireOutputString(value: unknown): string | null {
@@ -225,10 +232,9 @@ export function parseGeneratedEncounters(
   const typeSet = new Set(allowedTypes);
   const encounters = parsed.encounters.map((item) => validateEncounter(item, typeSet));
   if (!encounters.every((item): item is GeneratedEncounter => item !== null)) return null;
-  if (
-    expectedCount === allowedTypes.length
-    && allowedTypes.some((type) => encounters.filter((encounter) => encounter.type === type).length !== 1)
-  ) {
+  // 每种类型应恰好出现 expectedCount / 类型数 次（即组数）。
+  const perType = expectedCount / allowedTypes.length;
+  if (allowedTypes.some((type) => encounters.filter((encounter) => encounter.type === type).length !== perType)) {
     return null;
   }
   return encounters;
@@ -242,6 +248,12 @@ function upstreamError(status: number): RequestError {
     return new RequestError(429, 'DeepSeek 请求过于频繁，请稍后重试');
   }
   return new RequestError(502, 'DeepSeek 服务暂时不可用');
+}
+
+function maxTokensFor(input: RandomStoryRequest): number {
+  const perStory = input.length === 'long' ? 1400 : input.length === 'short' ? 500 : 900;
+  const total = input.groups * input.types.length;
+  return Math.min(8192, Math.max(2048, perStory * total));
 }
 
 async function callDeepSeek(
@@ -262,7 +274,7 @@ async function callDeepSeek(
       thinking: { type: 'disabled' },
       response_format: { type: 'json_object' },
       messages: buildMessages(input, retry),
-      max_tokens: input.length === 'long' ? 8192 : 4096,
+      max_tokens: maxTokensFor(input),
       stream: false,
     }),
     signal,
@@ -293,9 +305,10 @@ export async function handleRandomStoriesRequest(
     const input = validateRandomStoryRequest(await readRequestBody(request));
     const fetcher = options.fetcher ?? fetch;
 
+    const expectedCount = input.groups * input.types.length;
     for (let attempt = 0; attempt < 2; attempt++) {
       const content = await callDeepSeek(fetcher, apiKey, input, controller.signal, attempt === 1);
-      const encounters = parseGeneratedEncounters(content, input.count, input.types);
+      const encounters = parseGeneratedEncounters(content, expectedCount, input.types);
       if (encounters) {
         const result: RandomStoryResponse = { encounters };
         return jsonResponse(result);

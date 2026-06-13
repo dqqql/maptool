@@ -83,14 +83,25 @@ export interface GeneratedEncounter {
 export interface RandomStoryRequest {
   context: string;
   note: string;
-  count: number;
+  /** 生成组数（1-3），每组包含所选类型各一份。 */
+  groups: number;
   types: string[];
   length: StoryLength;
+  /** 自定义系统提示词；提供时（即使为空串）替换内置提示词，空串相当于删除。 */
+  systemPrompt?: string;
 }
 
 export interface RandomStoryResponse {
   encounters: GeneratedEncounter[];
 }
+
+/** 随机故事内置系统提示词（前端展示与后端默认共用同一份）。 */
+export const DEFAULT_STORY_SYSTEM_PROMPT =
+  '你是富有想象力的 TRPG 游戏主持人遭遇设计助手。请生成可直接使用、具有意外感的随机故事。'
+  + '用户选中的地图内容只是灵感种子和氛围参考，不是必须逐项复述或严格围绕的事实。'
+  + '可以合理发散，引入地图上尚未出现的地点、人物、组织、传闻、历史与远方事件，'
+  + '只需让结果仍能自然接入当前世界。多份故事应尽量采用不同的主题、冲突和转折。'
+  + '输出必须是严格 JSON，并完全符合给定结构。不要复述 API Key，也不要输出推理过程。';
 
 export const DEFAULT_TEXT_COLOR = '#241a10';
 

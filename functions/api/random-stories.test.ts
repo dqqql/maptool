@@ -8,7 +8,7 @@ import {
 const requestBody = {
   context: '节点：旧矿井',
   note: '',
-  count: 1,
+  groups: 1,
   types: ['调查'],
   length: 'medium',
 };
@@ -43,7 +43,7 @@ function deepSeekResponse(content: string, status = 200) {
 describe('random stories Pages Function', () => {
   it('validates request bounds', () => {
     expect(validateRandomStoryRequest(requestBody)).toEqual(requestBody);
-    expect(() => validateRandomStoryRequest({ ...requestBody, count: 7 })).toThrow();
+    expect(() => validateRandomStoryRequest({ ...requestBody, groups: 4 })).toThrow();
     expect(() => validateRandomStoryRequest({ ...requestBody, context: '', note: '' })).toThrow();
   });
 
@@ -62,6 +62,48 @@ describe('random stories Pages Function', () => {
       ],
     });
     expect(parseGeneratedEncounters(duplicateTypes, 2, ['调查', '战斗'])).toBeNull();
+  });
+
+  it('requires each type to appear once per group', () => {
+    const balanced = JSON.stringify({
+      encounters: [
+        encounter,
+        { ...encounter, title: '调查2' },
+        { ...encounter, title: '战斗1', type: '战斗' },
+        { ...encounter, title: '战斗2', type: '战斗' },
+      ],
+    });
+    expect(parseGeneratedEncounters(balanced, 4, ['调查', '战斗'])).toHaveLength(4);
+
+    const lopsided = JSON.stringify({
+      encounters: [
+        encounter,
+        { ...encounter, title: '调查2' },
+        { ...encounter, title: '调查3' },
+        { ...encounter, title: '调查4' },
+      ],
+    });
+    expect(parseGeneratedEncounters(lopsided, 4, ['调查', '战斗'])).toBeNull();
+  });
+
+  it('overrides the system prompt and omits it when empty', async () => {
+    const bodies: Array<{ messages: Array<{ role: string; content: string }> }> = [];
+    const fetcher = vi.fn<typeof fetch>(async (_input, init) => {
+      bodies.push(JSON.parse(String(init?.body)));
+      return deepSeekResponse(JSON.stringify({ encounters: [encounter] }));
+    });
+
+    await handleRandomStoriesRequest(
+      makeRequest({ ...requestBody, systemPrompt: '自定义提示词' }),
+      { fetcher },
+    );
+    expect(bodies[0].messages[0]).toEqual({ role: 'system', content: '自定义提示词' });
+
+    await handleRandomStoriesRequest(
+      makeRequest({ ...requestBody, systemPrompt: '   ' }),
+      { fetcher },
+    );
+    expect(bodies[1].messages[0].role).toBe('user');
   });
 
   it('forwards the API key and fixed DeepSeek options', async () => {
@@ -116,7 +158,7 @@ describe('random stories Pages Function', () => {
 
   it('returns 400 for malformed input and 401 for a missing key', async () => {
     const fetcher = vi.fn<typeof fetch>();
-    const badInput = await handleRandomStoriesRequest(makeRequest({ ...requestBody, count: 0 }), { fetcher });
+    const badInput = await handleRandomStoriesRequest(makeRequest({ ...requestBody, groups: 0 }), { fetcher });
     expect(badInput.status).toBe(400);
 
     const missingKey = new Request('https://example.com/api/random-stories', {

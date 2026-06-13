@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import type {
-  Edge,
-  GeneratedEncounter,
-  MapNode,
-  RandomStoryRequest,
-  StoryLength,
-  TextBox,
+import {
+  DEFAULT_STORY_SYSTEM_PROMPT,
+  type Edge,
+  type GeneratedEncounter,
+  type MapNode,
+  type RandomStoryRequest,
+  type StoryLength,
+  type TextBox,
 } from '../../types';
 import { deleteApiKey, getApiKey, saveApiKey } from './apiKeyStorage';
 import { generateRandomStories } from './randomStoryApi';
@@ -30,10 +31,13 @@ export function RandomStoryDialog({ open, nodes, edges, texts, onClose, onGenera
   const [keyLoading, setKeyLoading] = useState(false);
   const [editingKey, setEditingKey] = useState(false);
   const [note, setNote] = useState('');
-  const [count, setCount] = useState(3);
+  const [groupCount, setGroupCount] = useState(1);
   const [types, setTypes] = useState<string[]>(['调查', '战斗', '社交']);
   const [customType, setCustomType] = useState('');
   const [length, setLength] = useState<StoryLength>('medium');
+  const [overridePrompt, setOverridePrompt] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [promptConfirmOpen, setPromptConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -116,6 +120,21 @@ export function RandomStoryDialog({ open, nodes, edges, texts, onClose, onGenera
     ));
   }
 
+  function handleOverrideToggle() {
+    if (overridePrompt) {
+      setOverridePrompt(false);
+      return;
+    }
+    // 开启前先弹窗告知当前内置提示词与替换/删除规则
+    setPromptConfirmOpen(true);
+  }
+
+  function confirmEnableOverride() {
+    setOverridePrompt(true);
+    setCustomPrompt((current) => current || DEFAULT_STORY_SYSTEM_PROMPT);
+    setPromptConfirmOpen(false);
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!apiKey) {
@@ -143,9 +162,10 @@ export function RandomStoryDialog({ open, nodes, edges, texts, onClose, onGenera
     const request: RandomStoryRequest = {
       context,
       note: note.trim(),
-      count,
+      groups: groupCount,
       types: requestedTypes,
       length,
+      ...(overridePrompt ? { systemPrompt: customPrompt } : {}),
     };
 
     setSubmitting(true);
@@ -267,11 +287,12 @@ export function RandomStoryDialog({ open, nodes, edges, texts, onClose, onGenera
                 <summary>高级选项</summary>
                 <label className="random-story__field">
                   <span>生成数量</span>
-                  <select value={count} onChange={(event) => setCount(Number(event.target.value))}>
-                    {[1, 2, 3, 4, 5, 6].map((value) => (
-                      <option key={value} value={value}>{value} 份</option>
+                  <select value={groupCount} onChange={(event) => setGroupCount(Number(event.target.value))}>
+                    {[1, 2, 3].map((value) => (
+                      <option key={value} value={value}>{value} 组</option>
                     ))}
                   </select>
+                  <small className="random-story__hint">每组包含所选类型各一份</small>
                 </label>
 
                 <fieldset className="random-story__types">
@@ -298,6 +319,34 @@ export function RandomStoryDialog({ open, nodes, edges, texts, onClose, onGenera
                     placeholder="例如：悬疑、政治阴谋"
                   />
                 </label>
+
+                <div className="random-story__field">
+                  <label className="random-story__switch">
+                    <input
+                      type="checkbox"
+                      role="switch"
+                      checked={overridePrompt}
+                      onChange={handleOverrideToggle}
+                    />
+                    <span className="random-story__switch-track" aria-hidden="true" />
+                    <span>替换内置提示词</span>
+                  </label>
+                  {overridePrompt && (
+                    <>
+                      <textarea
+                        className="random-story__prompt-input"
+                        maxLength={8000}
+                        rows={6}
+                        value={customPrompt}
+                        onChange={(event) => setCustomPrompt(event.target.value)}
+                        placeholder="留空将删除系统提示词（不发送任何系统提示词）"
+                      />
+                      <small className="random-story__hint">
+                        此内容将替换内置系统提示词；留空相当于删除提示词。
+                      </small>
+                    </>
+                  )}
+                </div>
 
                 <label className="random-story__field">
                   <span>篇幅</span>
@@ -331,6 +380,35 @@ export function RandomStoryDialog({ open, nodes, edges, texts, onClose, onGenera
           </>
         )}
       </section>
+
+      {promptConfirmOpen && (
+        <div className="random-story__confirm-backdrop" role="presentation">
+          <div
+            className="random-story__confirm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="random-story-confirm-title"
+          >
+            <h3 id="random-story-confirm-title">替换内置提示词</h3>
+            <p>当前内置的系统提示词如下：</p>
+            <pre className="random-story__prompt-preview">{DEFAULT_STORY_SYSTEM_PROMPT}</pre>
+            <p>
+              开启后，下方输入框的内容将<strong>替换</strong>这段提示词一并发送；
+              若<strong>留空</strong>，则相当于<strong>删除</strong>系统提示词。
+            </p>
+            <div className="random-story__confirm-actions">
+              <button type="button" onClick={() => setPromptConfirmOpen(false)}>取消</button>
+              <button
+                type="button"
+                className="random-story__btn-primary"
+                onClick={confirmEnableOverride}
+              >
+                确定开启
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

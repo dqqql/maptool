@@ -4,7 +4,7 @@ import { generateRandomStories } from './randomStoryApi';
 const request = {
   context: '节点：旧矿井',
   note: '',
-  count: 1,
+  groups: 1,
   types: ['调查'],
   length: 'medium' as const,
 };
