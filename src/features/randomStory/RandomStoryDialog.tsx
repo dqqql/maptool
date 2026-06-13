@@ -198,16 +198,27 @@ export function RandomStoryDialog({ open, nodes, edges, texts, onClose, onGenera
       >
         <header className="random-story__header">
           <h2 id="random-story-title">随机故事</h2>
-          <button type="button" onClick={handleClose} disabled={submitting}>关闭</button>
+          <button
+            type="button"
+            className="random-story__close"
+            onClick={handleClose}
+            disabled={submitting}
+            aria-label="关闭"
+          >
+            ✕
+          </button>
         </header>
 
         {keyLoading ? (
-          <div className="random-story__loading">正在读取本地设置……</div>
+          <div className="random-story__loading">
+            <span className="random-story__spinner random-story__spinner--ink" aria-hidden="true" />
+            正在读取本地设置……
+          </div>
         ) : (
           <>
-            <div className="random-story__security">
-              API Key 仅保存在此浏览器的独立 IndexedDB 设置中，不会进入世界存档。
-              它会随生成请求发送到本站的 Cloudflare Function，请勿在不受信任的设备上保存。
+            <div className="random-story__security" role="note">
+              <span className="random-story__security-icon" aria-hidden="true">🔒</span>
+              <span>请勿在不受信任的设备上保存 API Key</span>
             </div>
 
             {editingKey || !apiKey ? (
@@ -221,7 +232,7 @@ export function RandomStoryDialog({ open, nodes, edges, texts, onClose, onGenera
                   onChange={(event) => setApiKeyInput(event.target.value)}
                   placeholder="输入 DeepSeek API Key"
                 />
-                <button type="button" onClick={handleSaveKey}>保存密钥</button>
+                <button type="button" className="random-story__btn-primary" onClick={handleSaveKey}>保存密钥</button>
                 {apiKey && (
                   <button type="button" onClick={() => setEditingKey(false)}>取消更换</button>
                 )}
@@ -301,8 +312,19 @@ export function RandomStoryDialog({ open, nodes, edges, texts, onClose, onGenera
               {error && <div className="random-story__error" role="alert">{error}</div>}
 
               <div className="random-story__actions">
-                <button type="submit" disabled={!apiKey || editingKey || submitting}>
-                  {submitting ? '正在生成……' : `生成 ${count} 份随机故事`}
+                <button
+                  type="submit"
+                  className="random-story__submit"
+                  disabled={!apiKey || editingKey || submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <span className="random-story__spinner" aria-hidden="true" />
+                      正在生成……
+                    </>
+                  ) : (
+                    '开始生成'
+                  )}
                 </button>
               </div>
             </form>

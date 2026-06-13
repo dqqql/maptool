@@ -286,6 +286,21 @@
   box-shadow: 2px 2px 0 0 var(--seal-deep);
 }
 
+/* “随机故事”入口按钮：暗金点缀，与导出按钮呼应 */
+.canvas-toolbar .tool[title='根据地图内容生成随机故事'] {
+  color: var(--gilt);
+  border-color: var(--gilt);
+}
+.canvas-toolbar .tool[title='根据地图内容生成随机故事']::before {
+  content: '✦';
+  font-size: 12px;
+}
+.canvas-toolbar .tool[title='根据地图内容生成随机故事']:hover:not(:disabled) {
+  background: var(--gilt);
+  color: #f6ecd6;
+  box-shadow: 2px 2px 0 0 #6f581f;
+}
+
 /* 导出下拉菜单 */
 .export-menu {
   position: relative;
