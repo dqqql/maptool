@@ -44,6 +44,7 @@ export function EditorPage() {
   const [notFound, setNotFound] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [randomStoryOpen, setRandomStoryOpen] = useState(false);
+  const [storyToast, setStoryToast] = useState<number | null>(null);
   const canvasRef = useRef<CanvasHandle>(null);
 
   const [floating, setFloating] = useState<Asset | null>(null);
@@ -175,6 +176,12 @@ export function EditorPage() {
     };
   }, [floating]);
 
+  useEffect(() => {
+    if (storyToast === null) return;
+    const timer = window.setTimeout(() => setStoryToast(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [storyToast]);
+
   function placeAtCenter(asset: Asset) {
     const col = document.querySelector('.canvas-col') as HTMLElement | null;
     const cx = col ? col.clientWidth / 2 : 400;
@@ -256,7 +263,7 @@ export function EditorPage() {
       STORY_TEXT_GAP,
     );
     fitGeneratedTexts(boxes);
-    alert(`已生成${encounters.length}份随机故事并放置到地图`);
+    setStoryToast(encounters.length);
   }
 
   const zoomPct = Math.round(viewport.scale * 100);
@@ -361,6 +368,23 @@ export function EditorPage() {
         onClose={() => setRandomStoryOpen(false)}
         onGenerated={handleStoriesGenerated}
       />
+
+      {storyToast !== null && (
+        <div className="story-toast" role="status">
+          <span className="story-toast__icon" aria-hidden="true">✓</span>
+          <span className="story-toast__text">
+            已生成 {storyToast} 份随机故事并放置到地图
+          </span>
+          <button
+            type="button"
+            className="story-toast__close"
+            onClick={() => setStoryToast(null)}
+            aria-label="关闭提示"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 }
