@@ -52,7 +52,7 @@ export function NodeShape({ node, isSelected, invScale, draggable, connectSource
   }
 
   const pad = 6; // 选中框外扩
-  const labelFontSize = Math.min(26, Math.max(15, 15 + (Math.min(node.width, node.height) - 92) * 0.035));
+  const labelFontSize = Math.min(26, Math.max(15, 15 + (Math.min(node.width, node.height) - 92) * 0.035)) * 1.5;
 
   return (
     <Group
@@ -105,18 +105,20 @@ export function NodeShape({ node, isSelected, invScale, draggable, connectSource
         <Rect width={node.width} height={node.height} fill="rgba(36,26,16,0.05)" />
       )}
       {/* 名称标签 */}
-      <Text
-        text={node.name}
-        x={-pad}
-        y={node.height + pad + 2}
-        width={node.width + pad * 2}
-        align="center"
-        fontFamily="'Noto Serif SC', serif"
-        fontSize={labelFontSize * invScale}
-        fontStyle={selected ? 'bold' : 'normal'}
-        fill={selected ? '#8c3a2b' : '#4d3c26'}
-        listening={false}
-      />
+      {!node.hideName && (
+        <Text
+          text={node.name}
+          x={-pad}
+          y={node.height + pad + 2}
+          width={node.width + pad * 2}
+          align="center"
+          fontFamily="'Noto Serif SC', serif"
+          fontSize={labelFontSize * invScale}
+          fontStyle={selected ? 'bold' : 'normal'}
+          fill={selected ? '#8c3a2b' : '#4d3c26'}
+          listening={false}
+        />
+      )}
     </Group>
   );
 }

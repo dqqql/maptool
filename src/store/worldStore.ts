@@ -200,6 +200,7 @@ export const useWorldStore = create<WorldState>((set, get) => {
         rotation: 0,
         zIndex: maxZ(get().nodes) + 1,
         name,
+        hideName: false,
         description: '',
         customProps: [],
       };

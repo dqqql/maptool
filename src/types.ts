@@ -38,6 +38,7 @@ export interface MapNode {
   rotation: number;
   zIndex: number;
   name: string;
+  hideName?: boolean;
   description: string;
   customProps: CustomProp[];
 }

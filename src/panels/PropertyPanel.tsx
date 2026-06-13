@@ -191,6 +191,21 @@ export function PropertyPanel() {
             <label className="prop-label">名称</label>
             <input className="ink-field" value={node.name} maxLength={60} placeholder="为此处起名……"
               onChange={(e) => updateNode(node.id, { name: e.target.value })} />
+            <button
+              type="button"
+              className={`prop-toggle ${node.hideName ? 'is-on' : ''}`}
+              role="switch"
+              aria-checked={Boolean(node.hideName)}
+              onClick={() => updateNode(node.id, { hideName: !node.hideName })}
+            >
+              <span className="prop-toggle__text">
+                <span className="prop-toggle__title">隐藏地图名称</span>
+                <span className="prop-toggle__hint">仅隐藏节点下方的名称标签</span>
+              </span>
+              <span className="prop-toggle__track" aria-hidden="true">
+                <span className="prop-toggle__thumb" />
+              </span>
+            </button>
           </div>
           <div className="prop-field">
             <label className="prop-label">描述</label>

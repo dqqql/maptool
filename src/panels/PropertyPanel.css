@@ -250,6 +250,72 @@
   border-color: var(--seal);
 }
 
+.prop-toggle {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 9px;
+  padding: 8px 10px;
+  color: var(--ink);
+  text-align: left;
+  background: rgba(255, 250, 235, 0.45);
+  border: 1.3px solid var(--line);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
+}
+.prop-toggle:hover {
+  border-color: var(--line-strong);
+  background: rgba(255, 250, 235, 0.75);
+}
+.prop-toggle:focus-visible {
+  outline: 2px solid var(--seal);
+  outline-offset: 2px;
+}
+.prop-toggle__text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.prop-toggle__title {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 600;
+}
+.prop-toggle__hint {
+  font-family: var(--font-serif);
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+.prop-toggle__track {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 22px;
+  padding: 2px;
+  background: var(--line-strong);
+  border-radius: 999px;
+  transition: background 0.15s var(--ease);
+}
+.prop-toggle__thumb {
+  display: block;
+  width: 18px;
+  height: 18px;
+  background: var(--paper-0);
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(36, 26, 16, 0.25);
+  transition: transform 0.15s var(--ease);
+}
+.prop-toggle.is-on .prop-toggle__track {
+  background: var(--seal);
+}
+.prop-toggle.is-on .prop-toggle__thumb {
+  transform: translateX(18px);
+}
+
 /* —— 自定义属性区 —— */
 .prop-custom {
   border-top: 1.5px solid var(--line);
